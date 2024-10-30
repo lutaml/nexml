@@ -1,0 +1,770 @@
+= Moxml: Modular XML processing for Ruby
+
+Moxml provides a unified API for XML processing in Ruby, supporting multiple XML parsing backends (Nokogiri, Ox, and Oga).
+
+Moxml ("mox-em-el") stands for "Modular XML" and aims to provide a consistent
+interface for working with XML documents, regardless of the underlying XML
+library.
+
+== Installation
+
+[source,ruby]
+----
+gem 'moxml'
+----
+
+== Basic usage
+
+=== Configuration
+
+Configure Moxml to use your preferred XML backend:
+
+[source,ruby]
+----
+require 'moxml'
+
+Moxml.configure do |config|
+  config.backend = :nokogiri  # or :ox, :oga
+end
+----
+
+=== Creating and parsing documents
+
+[source,ruby]
+----
+# Create new empty document
+doc = Moxml::Document.new
+
+# Parse from string
+doc = Moxml::Document.parse("<root><child>content</child></root>")
+
+# Parse with encoding
+doc = Moxml::Document.parse(xml_string, encoding: 'UTF-8')
+----
+
+=== Document creation patterns
+
+[source,ruby]
+----
+# Method 1: Create and build
+doc = Moxml::Document.new
+root = doc.create_element('root')
+doc.add_child(root)
+
+# Method 2: Parse from string
+doc = Moxml::Document.parse("<root/>")
+
+# Method 3: Parse with encoding
+doc = Moxml::Document.parse(xml_string, encoding: 'UTF-8')
+
+# Method 4: Parse with options
+doc = Moxml::Document.parse(xml_string, {
+  encoding: 'UTF-8',
+  strict: true
+})
+----
+
+=== Common XML patterns
+
+[source,ruby]
+----
+# Working with namespaces
+doc = Moxml::Document.new
+root = doc.create_element('root')
+root['xmlns:custom'] = 'http://example.com/ns'
+child = doc.create_element('custom:element')
+root.add_child(child)
+
+# Creating structured data
+person = doc.create_element('person')
+person['id'] = '123'
+name = doc.create_element('name')
+name.add_child(doc.create_text('John Doe'))
+person.add_child(name)
+
+# Working with attributes
+element = doc.create_element('div')
+element['class'] = 'container'
+element['data-id'] = '123'
+element['style'] = 'color: blue'
+
+# Handling special characters
+text = doc.create_text('Special chars: < > & " \'')
+cdata = doc.create_cdata('<script>alert("Hello!");</script>')
+
+# Processing instructions
+pi = doc.create_processing_instruction('xml-stylesheet',
+  'type="text/xsl" href="style.xsl"')
+doc.add_child(pi)
+----
+
+=== Working with elements
+
+[source,ruby]
+----
+# Create new element
+element = Moxml::Element.new('tagname')
+
+# Add attributes
+element['class'] = 'content'
+
+# Access attributes
+class_attr = element['class']
+
+# Add child elements
+child = element.create_element('child')
+element.add_child(child)
+
+# Access text content
+text_content = element.text
+
+# Add text content
+text = element.create_text('content')
+element.add_child(text)
+
+# Chaining operations
+element
+  .add_child(doc.create_element('child'))
+  .add_child(doc.create_text('content'))
+  ['class'] = 'new-class'
+
+# Complex element creation
+div = doc.create_element('div')
+div['class'] = 'container'
+div.add_child(doc.create_element('span'))
+  .add_child(doc.create_text('Hello'))
+div.add_child(doc.create_element('br'))
+div.add_child(doc.create_text('World'))
+----
+
+=== Working with different node types
+
+[source,ruby]
+----
+# Text nodes with various content
+plain_text = Moxml::Text.new("Simple text")
+multiline_text = Moxml::Text.new("Line 1\nLine 2")
+special_chars = Moxml::Text.new("Special: & < > \" '")
+
+# CDATA sections for different content types
+script_cdata = Moxml::Cdata.new("function() { alert('Hello!'); }")
+xml_cdata = Moxml::Cdata.new("<data><item>value</item></data>")
+mixed_cdata = Moxml::Cdata.new("Text with ]]> characters")
+
+# Comments for documentation
+todo_comment = Moxml::Comment.new("TODO: Add validation")
+section_comment = Moxml::Comment.new("----- Section Break -----")
+debug_comment = Moxml::Comment.new("DEBUG: Remove in production")
+
+# Processing instructions for various uses
+style_pi = Moxml::ProcessingInstruction.new(
+  "xml-stylesheet",
+  'type="text/css" href="style.css"'
+)
+php_pi = Moxml::ProcessingInstruction.new(
+  "php",
+  'echo "<?php echo $var; ?>>";'
+)
+custom_pi = Moxml::ProcessingInstruction.new(
+  "custom-processor",
+  'param1="value1" param2="value2"'
+)
+----
+
+=== Element manipulation examples
+
+[source,ruby]
+----
+# Building complex structures
+doc = Moxml::Document.new
+root = doc.create_element('html')
+doc.add_child(root)
+
+# Create head section
+head = doc.create_element('head')
+root.add_child(head)
+
+title = doc.create_element('title')
+title.add_child(doc.create_text('Example Page'))
+head.add_child(title)
+
+meta = doc.create_element('meta')
+meta['charset'] = 'UTF-8'
+head.add_child(meta)
+
+# Create body section
+body = doc.create_element('body')
+root.add_child(body)
+
+div = doc.create_element('div')
+div['class'] = 'container'
+body.add_child(div)
+
+# Add multiple paragraphs
+3.times do |i|
+  p = doc.create_element('p')
+  p.add_child(doc.create_text("Paragraph #{i + 1}"))
+  div.add_child(p)
+end
+
+# Working with lists
+ul = doc.create_element('ul')
+div.add_child(ul)
+
+['Item 1', 'Item 2', 'Item 3'].each do |text|
+  li = doc.create_element('li')
+  li.add_child(doc.create_text(text))
+  ul.add_child(li)
+end
+
+# Adding link element
+a = doc.create_element('a')
+a['href'] = 'https://example.com'
+a.add_child(doc.create_text('Visit Example'))
+div.add_child(a)
+----
+
+=== Advanced node manipulation
+
+[source,ruby]
+----
+# Cloning nodes
+original = doc.create_element('div')
+original['id'] = 'original'
+clone = original.clone
+
+# Moving nodes
+target = doc.create_element('target')
+source = doc.create_element('source')
+source.add_child(doc.create_text('Content'))
+target.add_child(source)
+
+# Replacing nodes
+old_node = doc.at_xpath('//old')
+new_node = doc.create_element('new')
+old_node.replace(new_node)
+
+# Inserting before/after
+reference = doc.create_element('reference')
+before = doc.create_element('before')
+after = doc.create_element('after')
+reference.add_previous_sibling(before)
+reference.add_next_sibling(after)
+
+# Conditional manipulation
+element = doc.at_xpath('//conditional')
+if element['flag'] == 'true'
+  element.add_child(doc.create_text('Flag is true'))
+else
+  element.remove
+end
+----
+
+=== Working with namespaces
+
+[source,ruby]
+----
+# Creating namespaced document
+doc = Moxml::Document.new
+root = doc.create_element('root')
+root['xmlns'] = 'http://example.com/default'
+root['xmlns:custom'] = 'http://example.com/custom'
+doc.add_child(root)
+
+# Adding namespaced elements
+default_elem = doc.create_element('default-elem')
+custom_elem = doc.create_element('custom:elem')
+
+root.add_child(default_elem)
+root.add_child(custom_elem)
+
+# Working with attributes in namespaces
+custom_elem['custom:attr'] = 'value'
+
+# Accessing namespaced content
+ns_elem = doc.at_xpath('//custom:elem')
+ns_attr = ns_elem['custom:attr']
+----
+
+=== Document serialization examples
+
+[source,ruby]
+----
+# Basic serialization
+xml_string = doc.to_xml
+
+# Pretty printing with indentation
+formatted_xml = doc.to_xml(
+  indent: 2,
+  pretty: true
+)
+
+# Controlling XML declaration
+with_declaration = doc.to_xml(
+  xml_declaration: true,
+  encoding: 'UTF-8',
+  standalone: 'yes'
+)
+
+# Compact output
+minimal_xml = doc.to_xml(
+  indent: 0,
+  pretty: false,
+  xml_declaration: false
+)
+
+# Custom formatting
+custom_format = doc.to_xml(
+  indent: 4,
+  encoding: 'ISO-8859-1',
+  xml_declaration: true
+)
+----
+
+== Implementation details
+
+=== Memory management
+
+[source,ruby]
+----
+# Efficient document handling
+doc = Moxml::Document.parse(large_xml)
+begin
+  # Process document
+  result = process_document(doc)
+ensure
+  # Clear references
+  doc = nil
+  GC.start
+end
+
+# Streaming large node sets
+doc.xpath('//large-set/*').each do |node|
+  # Process node
+  process_node(node)
+  # Clear reference
+  node = nil
+end
+
+# Handling large collections
+def process_large_nodeset(nodeset)
+  nodeset.each do |node|
+    yield node if block_given?
+  end
+ensure
+  # Clear references
+  nodeset = nil
+  GC.start
+end
+----
+
+=== Backend-specific optimizations
+
+[source,ruby]
+----
+# Nokogiri-specific optimizations
+if Moxml.config.backend == :nokogiri
+  # Use native CSS selectors
+  nodes = doc.native.css('complex > selector')
+  nodes.each do |native_node|
+    node = Moxml::Node.wrap(native_node)
+    # Process node
+  end
+
+  # Use native XPath
+  results = doc.native.xpath('//complex/xpath/expression')
+end
+
+# Ox-specific optimizations
+if Moxml.config.backend == :ox
+  # Use native parsing options
+  doc = Moxml::Document.parse(xml, {
+    mode: :generic,
+    effort: :tolerant,
+    smart: true
+  })
+
+  # Direct element creation
+  element = Ox::Element.new('name')
+  wrapped = Moxml::Element.new(element)
+end
+
+# Oga-specific optimizations
+if Moxml.config.backend == :oga
+  # Use native parsing features
+  doc = Moxml::Document.parse(xml, {
+    encoding: 'UTF-8',
+    strict: true
+  })
+
+  # Direct access to native methods
+  nodes = doc.native.xpath('//element')
+end
+----
+
+=== Threading patterns
+
+[source,ruby]
+----
+# Thread-safe document creation
+require 'thread'
+
+class ThreadSafeXmlProcessor
+  def initialize
+    @mutex = Mutex.new
+  end
+
+  def process_document(xml_string)
+    @mutex.synchronize do
+      doc = Moxml::Document.parse(xml_string)
+      # Process document
+      result = doc.to_xml
+      doc = nil
+      result
+    end
+  end
+end
+
+# Parallel document processing
+def process_documents(xml_strings)
+  threads = xml_strings.map do |xml|
+    Thread.new do
+      doc = Moxml::Document.parse(xml)
+      # Process document
+      doc = nil
+    end
+  end
+  threads.each(&:join)
+end
+
+# Thread-local document storage
+Thread.new do
+  Thread.current[:document] = Moxml::Document.new
+  # Process document
+ensure
+  Thread.current[:document] = nil
+end
+----
+
+== Troubleshooting
+
+=== Common issues and solutions
+
+==== Parsing errors
+
+[source,ruby]
+----
+# Handle malformed XML
+begin
+  doc = Moxml::Document.parse(xml_string)
+rescue Moxml::ParseError => e
+  puts "Parse error at line #{e.line}, column #{e.column}: #{e.message}"
+  # Attempt recovery
+  xml_string = cleanup_xml(xml_string)
+  retry
+end
+
+# Handle encoding issues
+begin
+  doc = Moxml::Document.parse(xml_string, encoding: 'UTF-8')
+rescue Moxml::ParseError => e
+  if e.message =~ /encoding/
+    # Try detecting encoding
+    detected_encoding = detect_encoding(xml_string)
+    retry if detected_encoding
+  end
+  raise
+end
+----
+
+==== Memory issues
+
+[source,ruby]
+----
+# Handle large documents
+def process_large_document(path)
+  # Read and process in chunks
+  File.open(path) do |file|
+    doc = Moxml::Document.parse(file)
+    doc.xpath('//chunk').each do |chunk|
+      process_chunk(chunk)
+      chunk = nil
+    end
+    doc = nil
+  end
+  GC.start
+end
+
+# Monitor memory usage
+require 'get_process_mem'
+
+def memory_safe_processing(xml)
+  memory = GetProcessMem.new
+  initial_memory = memory.mb
+
+  doc = Moxml::Document.parse(xml)
+  result = process_document(doc)
+  doc = nil
+  GC.start
+
+  final_memory = memory.mb
+  puts "Memory usage: #{final_memory - initial_memory}MB"
+
+  result
+end
+----
+
+==== Backend-specific issues
+
+[source,ruby]
+----
+# Handle backend limitations
+def safe_xpath(doc, xpath)
+  case Moxml.config.backend
+  when :nokogiri
+    doc.xpath(xpath)
+  when :ox
+    # Ox has limited XPath support
+    fallback_xpath_search(doc, xpath)
+  when :oga
+    # Handle Oga-specific XPath syntax
+    modified_xpath = adjust_xpath_for_oga(xpath)
+    doc.xpath(modified_xpath)
+  end
+end
+
+# Handle backend switching
+def with_backend(backend)
+  original_backend = Moxml.config.backend
+  Moxml.config.backend = backend
+  yield
+ensure
+  Moxml.config.backend = original_backend
+end
+----
+
+=== Performance optimization
+
+==== Document creation
+
+[source,ruby]
+----
+# Efficient document building
+def build_large_document
+  doc = Moxml::Document.new
+  root = doc.create_element('root')
+  doc.add_child(root)
+
+  # Pre-allocate elements
+  elements = Array.new(1000) do |i|
+    elem = doc.create_element('item')
+    elem['id'] = i.to_s
+    elem
+  end
+
+  # Batch add elements
+  elements.each do |elem|
+    root.add_child(elem)
+  end
+
+  doc
+end
+
+# Memory-efficient processing
+def process_large_xml(xml_string)
+  result = []
+  doc = Moxml::Document.parse(xml_string)
+
+  doc.xpath('//item').each do |item|
+    # Process and immediately discard
+    result << process_item(item)
+    item = nil
+  end
+
+  doc = nil
+  GC.start
+
+  result
+end
+----
+
+==== Query optimization
+
+[source,ruby]
+----
+# Optimize node selection
+def efficient_node_selection(doc)
+  # Cache frequently used nodes
+  @header_nodes ||= doc.xpath('//header').to_a
+
+  # Use specific selectors
+  doc.xpath('//specific/path')  # Better than '//*[name()="specific"]'
+
+  # Combine queries when possible
+  doc.xpath('//a | //b')  # Better than two separate queries
+end
+
+# Optimize attribute access
+def efficient_attribute_handling(element)
+  # Cache attribute values
+  @cached_attrs ||= element.attributes
+
+  # Direct attribute access
+  value = element['attr']  # Better than element.attributes['attr']
+
+  # Batch attribute updates
+  attrs = {'id' => '1', 'class' => 'new', 'data' => 'value'}
+  attrs.each { |k,v| element[k] = v }
+end
+----
+
+==== Serialization optimization
+
+[source,ruby]
+----
+# Efficient output generation
+def optimized_serialization(doc)
+  # Minimal output
+  compact = doc.to_xml(
+    indent: 0,
+    pretty: false,
+    xml_declaration: false
+  )
+
+  # Balanced formatting
+  readable = doc.to_xml(
+    indent: 2,
+    pretty: true,
+    xml_declaration: true
+  )
+
+  # Stream large documents
+  File.open('large.xml', 'w') do |file|
+    doc.write_to(file, indent: 2)
+  end
+end
+----
+
+=== Debugging tips
+
+==== Inspection helpers
+
+[source,ruby]
+----
+# Debug node structure
+def inspect_node(node, level = 0)
+  indent = "  " * level
+  puts "#{indent}#{node.class.name}: #{node.name}"
+
+  if node.respond_to?(:attributes)
+    node.attributes.each do |name, attr|
+      puts "#{indent}  @#{name}=#{attr.value.inspect}"
+    end
+  end
+
+  if node.respond_to?(:children)
+    node.children.each { |child| inspect_node(child, level + 1) }
+  end
+end
+
+# Track node operations
+def debug_node_operations
+  nodes_created = 0
+  nodes_removed = 0
+
+  yield
+ensure
+  puts "Nodes created: #{nodes_created}"
+  puts "Nodes removed: #{nodes_removed}"
+end
+----
+
+==== Backend validation
+
+[source,ruby]
+----
+# Verify backend behavior
+def verify_backend_compatibility
+  doc = Moxml::Document.new
+
+  # Test basic operations
+  element = doc.create_element('test')
+  doc.add_child(element)
+
+  # Verify node handling
+  raise "Node creation failed" unless doc.root
+  raise "Node type wrong" unless doc.root.is_a?(Moxml::Element)
+
+  # Verify serialization
+  xml = doc.to_xml
+  raise "Serialization failed" unless xml.include?('<test/>')
+
+  puts "Backend verification successful"
+rescue => e
+  puts "Backend verification failed: #{e.message}"
+end
+----
+
+== Error handling
+
+Moxml provides unified error handling:
+
+* `Moxml::Error` - Base error class
+* `Moxml::ParseError` - XML parsing errors
+* `Moxml::ArgumentError` - Invalid argument errors
+
+=== Error handling patterns
+
+[source,ruby]
+----
+# Handle parsing errors
+begin
+  doc = Moxml::Document.parse(xml_string)
+rescue Moxml::ParseError => e
+  logger.error "Parse error: #{e.message}"
+  logger.error "At line #{e.line}, column #{e.column}"
+  raise
+end
+
+# Handle invalid operations
+begin
+  element['invalid/name'] = 'value'
+rescue Moxml::ArgumentError => e
+  logger.warn "Invalid operation: #{e.message}"
+  # Use alternative approach
+end
+
+# Custom error handling
+class XmlProcessor
+  def process(xml)
+    doc = Moxml::Document.parse(xml)
+    yield doc
+  rescue Moxml::Error => e
+    handle_moxml_error(e)
+  rescue StandardError => e
+    handle_standard_error(e)
+  ensure
+    doc = nil
+  end
+end
+----
+
+== Contributing
+
+Bug reports and pull requests are welcome on GitHub at
+https://github.com/lutaml/moxml.
+
+=== Development guidelines
+
+* Follow Ruby style guide
+* Add tests for new features
+* Update documentation
+* Ensure backwards compatibility
+* Consider performance implications
+* Test with all supported backends
+
+== Copyright and license
+
+Copyright Ribose.
+
+The gem is available as open source under the terms of the BSD-2-Clause License.
