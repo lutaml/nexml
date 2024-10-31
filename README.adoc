@@ -1,0 +1,280 @@
+= Moxml: Modular XML processing for Ruby
+:toc: macro
+:toclevels: 3
+:toc-title: Contents
+:source-highlighter: highlight.js
+
+toc::[]
+
+== Purpose
+
+Moxml provides a unified XML processing interface for Ruby applications, abstracting the underlying XML library implementation. It enables:
+
+* Consistent API across different XML libraries (Nokogiri, Ox, Oga)
+* Simplified switching between XML processing engines
+* Standard error handling and node manipulation patterns
+* Clean separation between interface and implementation
+
+== Quick start
+
+Install the gem and at least one adapter:
+
+[source,ruby]
+----
+# In your Gemfile
+gem 'moxml'
+gem 'nokogiri'  # Default adapter
+----
+
+Build and manipulate XML documents:
+
+[source,ruby]
+----
+require 'moxml'
+
+# Create a context with the default adapter
+context = Moxml.new
+
+# Create a document
+doc = context.create_document
+
+# Build structure
+root = doc.create_element('book')
+doc.add_child(root)
+
+# Add content with namespaces
+root.add_namespace('dc', 'http://purl.org/dc/elements/1.1/')
+title = doc.create_element('dc:title')
+title.add_child(doc.create_text('XML Processing with Ruby'))
+root.add_child(title)
+
+# Output formatted XML
+puts doc.to_xml(indent: 2)
+----
+
+== Classes and API
+
+=== Context
+
+The entry point for XML processing:
+
+[source,ruby]
+----
+# Create with default adapter
+context = Moxml.new
+
+# Specify adapter
+context = Moxml.new(:ox)
+
+# Parse XML
+doc = context.parse(xml_string)
+
+# Create new document
+doc = context.create_document
+----
+
+=== Document
+
+Represents an XML document:
+
+[source,ruby]
+----
+# Access root element
+root = doc.root
+
+# Create nodes
+element = doc.create_element('name')
+text = doc.create_text('content')
+cdata = doc.create_cdata('<raw>')
+comment = doc.create_comment('note')
+pi = doc.create_processing_instruction('target', 'data')
+
+# Create declaration
+decl = doc.create_declaration('1.0', 'UTF-8', 'yes')
+----
+
+=== Element
+
+Represents an XML element:
+
+[source,ruby]
+----
+# Attributes
+element['id'] = 'main'
+value = element['class']
+element.remove_attribute('temp')
+
+# Namespaces
+element.add_namespace('xs', 'http://www.w3.org/2001/XMLSchema')
+ns = element.namespace
+element.namespace = new_ns
+
+# Content
+element.text = 'content'
+element.inner_html = '<child>nested</child>'
+
+# Structure
+element.add_child(node)
+element.add_previous_sibling(node)
+element.add_next_sibling(node)
+----
+
+=== Node
+
+Base functionality for all XML nodes:
+
+[source,ruby]
+----
+# Navigation
+parent = node.parent
+children = node.children
+next_node = node.next_sibling
+prev_node = node.previous_sibling
+
+# Manipulation
+node.remove
+node.replace(other_node)
+
+# Serialization
+xml = node.to_xml
+----
+
+=== NodeSet
+
+Collection of nodes from queries:
+
+[source,ruby]
+----
+# Iteration
+nodes.each { |node| process(node) }
+nodes.map { |node| node.text }
+
+# Access
+first = nodes[0]
+last = nodes[-1]
+subset = nodes[0..2]
+
+# Information
+size = nodes.length
+empty = nodes.empty?
+----
+
+== Integrated usage examples
+
+=== Building a complex document
+
+[source,ruby]
+----
+doc = Moxml.new.create_document
+
+# Add declaration
+doc.add_child(doc.create_declaration('1.0', 'UTF-8'))
+
+# Create root with namespace
+root = doc.create_element('library')
+root.add_namespace(nil, 'http://example.org/library')
+root.add_namespace('dc', 'http://purl.org/dc/elements/1.1/')
+doc.add_child(root)
+
+# Add books
+['Ruby', 'XML'].each do |title|
+  book = doc.create_element('book')
+  
+  # Add metadata
+  dc_title = doc.create_element('dc:title')
+  dc_title.add_child(doc.create_text(title))
+  book.add_child(dc_title)
+  
+  # Add description
+  desc = doc.create_element('description')
+  desc.add_child(doc.create_cdata("About #{title}..."))
+  book.add_child(desc)
+  
+  root.add_child(book)
+end
+----
+
+=== Querying and modification
+
+[source,ruby]
+----
+# Find nodes
+books = doc.xpath('//book')
+titles = doc.xpath('//dc:title', 
+  'dc' => 'http://purl.org/dc/elements/1.1/')
+
+# Modify matching nodes
+books.each do |book|
+  # Add attribute
+  book['added'] = Time.now.iso8601
+  
+  # Add child element
+  status = doc.create_element('status')
+  status.add_child(doc.create_text('available'))
+  book.add_child(status)
+end
+----
+
+== Advanced usage examples
+
+=== Custom error handling
+
+[source,ruby]
+----
+begin
+  doc = context.parse(xml_string)
+rescue Moxml::ParseError => e
+  puts "Parse error at line #{e.line}, column #{e.column}"
+  puts e.message
+rescue Moxml::Error => e
+  puts "XML error: #{e.message}"
+end
+----
+
+=== Thread-safe processing
+
+[source,ruby]
+----
+require 'thread'
+
+class XmlProcessor
+  def initialize
+    @mutex = Mutex.new
+    @context = Moxml.new
+  end
+  
+  def process(xml)
+    @mutex.synchronize do
+      doc = @context.parse(xml)
+      # Modify document
+      doc.to_xml
+    end
+  end
+end
+----
+
+=== Memory-efficient processing
+
+[source,ruby]
+----
+# Process large documents
+doc.xpath('//large-node').each do |node|
+  # Process node
+  node.remove
+  node = nil
+end
+GC.start
+
+# Stream processing
+File.open('large.xml') do |file|
+  doc = context.parse(file)
+  process(doc)
+  doc = nil
+end
+----
+
+== Copyright and license
+
+Copyright Ribose Inc.
+
+This gem is available as open source under the terms of the BSD-2-Clause License.
