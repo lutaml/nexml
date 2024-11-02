@@ -28,17 +28,27 @@ module Moxml
 
       def self.create_cdata(content)
         doc = ::Nokogiri::XML::Document.new
-        cdata = doc.create_cdata(content.to_s)
+        cdata = ::Nokogiri::XML::CDATA.new(doc, content.to_s)
         cdata
       end
 
       def self.create_processing_instruction(target, content)
-        content = content.to_s.gsub(/"/, "&quot;").gsub(/'/, "&apos;")
+        content = content.to_s.gsub(/&quot;/, '"').gsub(/&apos;/, "'") # First decode any existing entities
+        escaped_content = content.gsub(/"/, "&quot;").gsub(/'/, "&apos;") # Then encode properly
         ::Nokogiri::XML::ProcessingInstruction.new(
           ::Nokogiri::XML::Document.new,
           target.to_s,
-          content
+          escaped_content
         )
+      end
+
+      def self.processing_instruction_content(node)
+        node.content.gsub(/&quot;/, '"').gsub(/&apos;/, "'")
+      end
+
+      def self.set_processing_instruction_content(node, content)
+        escaped_content = content.to_s.gsub(/"/, "&quot;").gsub(/'/, "&apos;")
+        node.content = escaped_content
       end
 
       def self.validate_namespace_uri(uri)
@@ -49,10 +59,17 @@ module Moxml
 
       def self.create_namespace(element, prefix, uri)
         validate_namespace_uri(uri)
-        if prefix&.strip&.empty?
+        if prefix.nil? || prefix.empty?
           element.add_namespace(nil, uri)
         else
           element.add_namespace(prefix, uri)
+        end
+      end
+
+      def self.namespace_definitions(node)
+        return [] unless node.respond_to?(:namespace_definitions)
+        node.namespace_definitions.map do |ns|
+          [ns.prefix, ns.href]
         end
       end
 
@@ -64,6 +81,10 @@ module Moxml
         namespace&.prefix
       end
 
+      def self.namespace_uri(namespace)
+        namespace&.href
+      end
+
       def self.set_namespace(element, namespace)
         prefix, uri = namespace
         if prefix
@@ -73,23 +94,15 @@ module Moxml
         end
       end
 
-      def self.namespace_prefix(namespace)
-        namespace&.prefix || ""
-      end
-
-      def self.namespace_uri(namespace)
-        namespace&.href
-      end
-
       def self.node_name(node)
         node.name
       end
 
       def self.node_type(node)
         case node
+        when ::Nokogiri::XML::CDATA then :cdata
         when ::Nokogiri::XML::Element then :element
         when ::Nokogiri::XML::Text then :text
-        when ::Nokogiri::XML::CDATA then :cdata
         when ::Nokogiri::XML::Comment then :comment
         when ::Nokogiri::XML::ProcessingInstruction then :processing_instruction
         when ::Nokogiri::XML::Document then :document
@@ -128,28 +141,16 @@ module Moxml
       end
 
       def self.attributes(element)
-        element.attributes.transform_values(&:value)
-      end
-
-      def self.set_attribute(element, name, value)
-        element[name.to_s] = escape_attribute(value.to_s)
-      end
-
-      def self.get_attribute(element, name)
-        attr = element[name.to_s]
-        return nil if attr.nil?
-        ::Nokogiri::XML::Attr.new(element, name.to_s, attr)
-      end
-
-      def self.remove_attribute(element, name)
-        element.remove_attribute(name.to_s)
+        element.attributes.transform_values do |attr|
+          attr.respond_to?(:value) ? attr.value : attr
+        end
       end
 
       def self.attribute_name(attr)
         if attr.is_a?(::Nokogiri::XML::Attr)
           attr.name
         else
-          attr.to_s
+          attr.to_s.split("=").first
         end
       end
 
@@ -157,8 +158,25 @@ module Moxml
         if attr.is_a?(::Nokogiri::XML::Attr)
           attr.value
         else
-          attr.to_s
+          attr.to_s.split("=").last.gsub(/^"|"$/, "")
         end
+      end
+
+      def self.remove_attribute(element, name)
+        if element.is_a?(::Nokogiri::XML::Element)
+          element.remove_attribute(name.to_s)
+        end
+      end
+
+      def self.set_attribute(element, name, value)
+        escaped_value = escape_attribute(value.to_s)
+        element[name.to_s] = escaped_value
+      end
+
+      def self.get_attribute(element, name)
+        attr = element.attribute(name.to_s)
+        return nil unless attr
+        attr.value
       end
 
       def self.attribute_namespace(attr)
@@ -204,12 +222,14 @@ module Moxml
       rescue ::Nokogiri::XML::XPath::SyntaxError => e
         raise Moxml::XPathError, e.message
       end
-
       def self.create_declaration(version = "1.0", encoding = "UTF-8", standalone = nil)
         doc = ::Nokogiri::XML::Document.new
-        doc.version = version
         doc.encoding = encoding
-        doc.children.first.attributes["standalone"] = standalone if standalone
+        doc.version = version
+
+        decl = doc.create_internal_subset(nil, nil, nil)
+        decl.instance_variable_set(:@standalone, standalone) if standalone
+
         doc
       end
 
@@ -222,7 +242,7 @@ module Moxml
       end
 
       def self.declaration_standalone(node)
-        node.children.first&.attributes&.dig("standalone")&.value
+        node.internal_subset&.instance_variable_get(:@standalone)
       end
 
       def self.set_declaration_version(node, version)
@@ -238,11 +258,7 @@ module Moxml
       def self.set_declaration_standalone(node, standalone)
         valid_values = [nil, "yes", "no"]
         raise ArgumentError, "Invalid standalone value: #{standalone}" unless valid_values.include?(standalone)
-        if standalone
-          node.children.first.attributes["standalone"] = standalone
-        else
-          node.children.first.attributes.delete("standalone")
-        end
+        node.internal_subset&.instance_variable_set(:@standalone, standalone)
       end
 
       def self.processing_instruction_target(node)
@@ -326,11 +342,12 @@ module Moxml
       def self.serialize(node, options = {})
         options = normalize_options(options)
         case node
+        when ::Nokogiri::XML::ProcessingInstruction
+          content = node.content.gsub(/&quot;/, '"').gsub(/&apos;/, "'")
+          "<?#{node.name} #{content}?>"
         when ::Nokogiri::XML::Comment
           comment = node.content.gsub(/--/, "- -")
           "<!-- #{comment} -->"
-        when ::Nokogiri::XML::ProcessingInstruction
-          "<?#{node.name} #{node.content}?>"
         else
           if options[:pretty]
             node.to_xml(indent: options[:indent])
@@ -349,6 +366,12 @@ module Moxml
           encoding: "UTF-8",
           xml_declaration: true,
         }.merge(options)
+      end
+
+      def self.build_declaration_content(version, encoding, standalone)
+        content = "version=\"#{version}\" encoding=\"#{encoding}\""
+        content << " standalone=\"#{standalone}\"" if standalone
+        content
       end
     end
   end

@@ -29,10 +29,22 @@ module Moxml
     end
 
     def create_declaration(version = "1.0", encoding = "UTF-8", standalone = nil)
-      Declaration.new(
-        adapter.create_declaration(version, encoding, standalone),
-        context
-      )
+      decl = adapter.create_declaration(version, encoding, standalone)
+      Declaration.new(decl, context)
+    end
+
+    def add_child(node)
+      node = prepare_node(node)
+      if node.is_a?(Declaration)
+        if children.empty?
+          adapter.add_child(@native, node.native)
+        else
+          adapter.add_previous_sibling(children.first.native, node.native)
+        end
+      else
+        adapter.add_child(@native, node.native)
+      end
+      self
     end
   end
 end

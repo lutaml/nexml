@@ -8,7 +8,10 @@ toc::[]
 
 == Purpose
 
-Moxml provides a unified XML processing interface for Ruby applications, abstracting the underlying XML library implementation. It enables:
+Moxml provides a unified XML processing interface for Ruby applications,
+abstracting the underlying XML library implementation.
+
+It enables:
 
 * Consistent API across different XML libraries (Nokogiri, Ox, Oga)
 * Simplified switching between XML processing engines
@@ -54,6 +57,21 @@ puts doc.to_xml(indent: 2)
 
 == Classes and API
 
+=== General
+
+These classes provide the complete API for working with all XML node types. Each
+implements the common Node interface for traversal, manipulation and
+serialization, while adding type-specific functionality.
+
+The library ensures consistent behavior across different XML backends through
+adapter implementations, abstracting away the underlying differences between
+libraries like Nokogiri, Ox and Oga.
+
+All classes properly handle XML escaping, namespaces, and edge cases according
+to the XML specification. The API is designed to be intuitive while maintaining
+proper XML semantics.
+
+
 === Context
 
 The entry point for XML processing:
@@ -75,23 +93,160 @@ doc = context.create_document
 
 === Document
 
-Represents an XML document:
+The Document class provides the foundation for XML document manipulation:
+
+* Acts as a factory for creating all types of XML nodes
+* Manages document structure and properties
+* Provides document-level operations like parsing and serialization
+* Supports XPath querying across the entire document
+* Handles proper XML declaration and processing instruction placement
+* Maintains namespace declarations and scope
+* Ensures well-formed XML output
+
+Common operations sequence:
 
 [source,ruby]
 ----
-# Access root element
-root = doc.root
+# Create complete document with all components
+doc = context.create_document
 
-# Create nodes
-element = doc.create_element('name')
-text = doc.create_text('content')
-cdata = doc.create_cdata('<raw>')
-comment = doc.create_comment('note')
-pi = doc.create_processing_instruction('target', 'data')
+# 1. Add declaration (optional but recommended)
+doc.add_child(doc.create_declaration('1.0', 'UTF-8'))
 
-# Create declaration
-decl = doc.create_declaration('1.0', 'UTF-8', 'yes')
+# 2. Add processing instructions (optional)
+doc.add_child(
+  doc.create_processing_instruction('xml-stylesheet',
+    'type="text/xsl" href="style.xsl"')
+)
+
+# 3. Add root element (required)
+root = doc.create_element('root')
+doc.add_child(root)
+
+# 4. Add namespaces (optional)
+root.add_namespace('dc', 'http://purl.org/dc/elements/1.1/')
+
+# 5. Build content
+title = doc.create_element('dc:title')
+title.add_child(doc.create_text('Document Title'))
+root.add_child(title)
+
+# 6. Add comments (optional)
+root.add_child(doc.create_comment('Section 1'))
+
+# 7. Serialize
+puts doc.to_xml(indent: 2)
 ----
+
+Returns:
+[source,xml]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type="text/xsl" href="style.xsl"?>
+<root xmlns:dc="http://purl.org/dc/elements/1.1/">
+  <dc:title>Document Title</dc:title>
+  <!-- Section 1 -->
+</root>
+----
+
+
+.Usage of Document
+[source,ruby]
+----
+# Creating documents
+context = Moxml.new                           # Create context with default adapter
+doc = context.create_document                 # Create empty document
+doc = context.parse("<root/>")               # Parse from string
+doc = context.parse(File.read("file.xml"))   # Parse from file
+
+# Document properties
+root = doc.root                              # Get root element (Element or nil)
+doc.encoding                                 # Get document encoding (String)
+doc.version                                  # Get XML version (String)
+
+# Creating nodes
+element = doc.create_element('name')         # Create Element
+text = doc.create_text('content')           # Create Text node
+cdata = doc.create_cdata('<raw>')           # Create CDATA section
+comment = doc.create_comment('note')        # Create Comment
+pi = doc.create_processing_instruction('target', 'data')  # Create ProcessingInstruction
+
+# Creating declarations
+decl = doc.create_declaration(               # Create XML Declaration
+  version: '1.0',                           # Optional, defaults to '1.0'
+  encoding: 'UTF-8',                        # Optional, defaults to 'UTF-8'
+  standalone: 'yes'                         # Optional, can be 'yes', 'no', or nil
+)
+
+# Document structure
+doc.add_child(decl)                         # Add declaration (must be first)
+doc.add_child(element)                      # Add root element
+doc.add_child(pi)                           # Add processing instruction
+
+# Building a complete document
+doc = context.create_document
+decl = doc.create_declaration('1.0', 'UTF-8')
+doc.add_child(decl)
+
+root = doc.create_element('root')
+doc.add_child(root)
+
+# Add comment before root element
+root.add_previous_sibling(
+  doc.create_comment('Root element follows')
+)
+
+# Add processing instruction
+root.add_previous_sibling(
+  doc.create_processing_instruction('xml-stylesheet',
+    'type="text/xsl" href="style.xsl"')
+)
+
+# Add namespaced content
+root.add_namespace('dc', 'http://purl.org/dc/elements/1.1/')
+title = doc.create_element('dc:title')
+title.add_child(doc.create_text('Document Title'))
+root.add_child(title)
+
+# Node querying
+nodes = doc.xpath('//title')                # Find all title elements (NodeSet)
+node = doc.at_xpath('//title')              # Find first title element (Node or nil)
+ns_nodes = doc.xpath('//dc:title',          # Find with namespace
+  'dc' => 'http://purl.org/dc/elements/1.1/')
+
+# Serialization
+xml = doc.to_xml                            # Convert to XML string
+xml = doc.to_xml(indent: 2)                 # Pretty print with indentation
+xml = doc.to_xml(                           # All formatting options
+  indent: 2,                                # Number of spaces for indentation
+  encoding: 'UTF-8',                        # Output encoding
+  xml_declaration: true                     # Include XML declaration
+)
+
+# Common patterns
+doc = context.create_document
+doc.add_child(doc.create_declaration).      # Method chaining
+    add_child(doc.create_element('root'))
+
+# Creating structured content
+book = doc.create_element('book')
+book.add_child(doc.create_element('title')).
+     add_child(doc.create_text('Title'))    # Chain creation and nesting
+
+# Error handling
+begin
+  doc = context.parse(xml_string)
+rescue Moxml::ParseError => e
+  puts "Parse error at line #{e.line}, column #{e.column}"
+rescue Moxml::Error => e
+  puts "General XML error: #{e.message}"
+end
+
+# Memory management
+doc = nil                                   # Allow document to be GC'd
+GC.start                                    # Force garbage collection
+----
+
 
 === Element
 
@@ -99,24 +254,167 @@ Represents an XML element:
 
 [source,ruby]
 ----
+# Create element
+element = doc.create_element('book')  # Returns Element
+
+# Add to document/parent
+doc.add_child(element)      # Add as document root
+parent.add_child(element)   # Add as child of another element
+
 # Attributes
-element['id'] = 'main'
-value = element['class']
-element.remove_attribute('temp')
+element['id'] = 'main'                # Add/update attribute
+value = element['class']              # Get attribute value (String or nil)
+element.attributes                    # Get all attributes (Array<Attribute>)
+attr = element.attribute('id')        # Get specific attribute (Attribute or nil)
+element.remove_attribute('temp')      # Remove attribute
 
 # Namespaces
-element.add_namespace('xs', 'http://www.w3.org/2001/XMLSchema')
-ns = element.namespace
-element.namespace = new_ns
+ns = element.add_namespace('xs', 'http://www.w3.org/2001/XMLSchema') # Returns self
+element.namespaces                    # Get all namespaces (Array<Namespace>)
+current_ns = element.namespace        # Get element's namespace (Namespace or nil)
+element.namespace = ns                # Set element's namespace
 
 # Content
-element.text = 'content'
-element.inner_html = '<child>nested</child>'
+element.text = 'content'              # Set text content
+content = element.text                # Get text content (String)
+element.inner_html = '<child>nested</child>'  # Set content from XML string
+html = element.inner_html             # Get content as XML string
 
 # Structure
-element.add_child(node)
-element.add_previous_sibling(node)
-element.add_next_sibling(node)
+element.add_child(node)               # Append child node
+element.add_previous_sibling(node)    # Add sibling before
+element.add_next_sibling(node)        # Add sibling after
+element.remove                        # Remove from document
+element.replace(other)                # Replace with another node
+
+# Name
+name = element.name                   # Get element name (String)
+element.name = 'newname'              # Change element name
+----
+
+=== Attribute
+
+Represents an XML attribute:
+
+[source,ruby]
+----
+# Creating attributes
+element['id'] = 'main'                # Direct assignment
+attr = element.attribute('id')        # Get Attribute object
+
+# Access
+name = attr.name                      # Get attribute name (String)
+value = attr.value                    # Get attribute value (String)
+ns = attr.namespace                   # Get namespace (Namespace or nil)
+
+# Modification
+attr.name = "newname"                 # Change attribute name
+attr.value = "newval"                 # Change attribute value
+attr.namespace = ns                   # Set namespace
+
+# Using with namespaces
+ns = element.add_namespace('dc', 'http://purl.org/dc/elements/1.1/')
+element['dc:title'] = 'Book Title'    # Create namespaced attribute
+attr = element.attribute('dc:title')  # Get namespaced attribute
+
+# Removal
+attr.remove                           # Remove attribute from element
+element.remove_attribute('id')        # Alternative removal method
+
+# Conversion
+str = attr.to_s                       # => 'name="value"' or 'ns:name="value"'
+----
+
+
+=== Text
+
+Represents XML text content:
+
+[source,ruby]
+----
+# Create
+text = doc.create_text('content')
+
+# Access/modify
+content = text.content
+text.content = 'new content'
+----
+
+
+
+=== Namespace
+
+Represents an XML namespace:
+
+[source,ruby]
+----
+# Creating namespaces
+ns = element.add_namespace('dc', 'http://purl.org/dc/elements/1.1/')  # Returns self
+default_ns = element.add_namespace(nil, 'http://example.org')         # Default namespace
+
+# Access
+prefix = ns.prefix                    # Get prefix (String or nil for default)
+uri = ns.uri                          # Get URI (String)
+
+# Using with elements
+element.namespace = ns                # Apply namespace to element
+namespaces = element.namespaces      # Get all namespaces (Array<Namespace>)
+current = element.namespace          # Get current namespace (Namespace or nil)
+
+# Using with attributes
+element['dc:title'] = 'Book Title'   # Create namespaced attribute
+attr = element.attribute('dc:title') # Get namespaced attribute
+attr.namespace = ns                  # Set attribute namespace
+
+# Conversion/Comparison
+str = ns.to_s                        # => 'xmlns:dc="http://purl.org/dc/elements/1.1/"'
+ns1 == ns2                          # Compare namespaces
+----
+
+=== Comment
+
+Represents XML comments:
+
+[source,ruby]
+----
+# Creating comments
+comment = doc.create_comment('A comment')     # Create standalone comment
+element.add_child(doc.create_comment('note')) # Create and attach to element
+
+# Access/modify
+content = comment.content                     # Get comment text (String)
+comment.content = 'New comment'               # Change comment text
+
+# Document structure
+parent.add_child(comment)                     # Add to parent
+comment.remove                                # Remove from document
+comment.replace(other_node)                   # Replace with another node
+
+# Serialization
+comment.to_xml                                # => '<!-- A comment -->'
+----
+
+=== CDATA
+
+Represents XML CDATA sections:
+
+[source,ruby]
+----
+# Creating CDATA sections
+cdata = doc.create_cdata('<xml>content</xml>')  # Create standalone CDATA
+element.add_child(doc.create_cdata('raw'))      # Create and attach
+
+# Access/modify
+content = cdata.content                         # Get CDATA content (String)
+cdata.content = 'new <xml>content</xml>'        # Change content
+
+# Document structure
+parent.add_child(cdata)                         # Add to parent
+cdata.remove                                    # Remove from document
+cdata.replace(other_node)                       # Replace with another node
+
+# Serialization
+cdata.to_xml                                    # => '<![CDATA[<xml>content</xml>]]>'
 ----
 
 === Node
@@ -159,6 +457,44 @@ size = nodes.length
 empty = nodes.empty?
 ----
 
+
+=== Declaration
+
+Represents an XML declaration:
+
+[source,ruby]
+----
+# Create
+decl = doc.create_declaration('1.0', 'UTF-8', 'yes')
+
+# Access/modify
+decl.version = '1.1'
+decl.encoding = 'ISO-8859-1'
+decl.standalone = 'no'
+
+# Serialize
+decl.to_xml  # => '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+----
+
+=== ProcessingInstruction
+
+Represents an XML processing instruction:
+
+[source,ruby]
+----
+# Create
+pi = doc.create_processing_instruction('target', 'data')
+
+# Access/modify
+pi.target = 'newtarget'
+pi.content = 'newdata'
+
+# Serialize
+pi.to_xml  # => '<?target data?>'
+----
+
+
+
 == Integrated usage examples
 
 === Building a complex document
@@ -179,17 +515,17 @@ doc.add_child(root)
 # Add books
 ['Ruby', 'XML'].each do |title|
   book = doc.create_element('book')
-  
+
   # Add metadata
   dc_title = doc.create_element('dc:title')
   dc_title.add_child(doc.create_text(title))
   book.add_child(dc_title)
-  
+
   # Add description
   desc = doc.create_element('description')
   desc.add_child(doc.create_cdata("About #{title}..."))
   book.add_child(desc)
-  
+
   root.add_child(book)
 end
 ----
@@ -200,14 +536,14 @@ end
 ----
 # Find nodes
 books = doc.xpath('//book')
-titles = doc.xpath('//dc:title', 
+titles = doc.xpath('//dc:title',
   'dc' => 'http://purl.org/dc/elements/1.1/')
 
 # Modify matching nodes
 books.each do |book|
   # Add attribute
   book['added'] = Time.now.iso8601
-  
+
   # Add child element
   status = doc.create_element('status')
   status.add_child(doc.create_text('available'))
@@ -242,7 +578,7 @@ class XmlProcessor
     @mutex = Mutex.new
     @context = Moxml.new
   end
-  
+
   def process(xml)
     @mutex.synchronize do
       doc = @context.parse(xml)

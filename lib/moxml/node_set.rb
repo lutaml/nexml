@@ -65,6 +65,10 @@ module Moxml
       self
     end
 
+    def +(other)
+      self.class.new(nodes + other.nodes, context)
+    end
+
     def text
       map(&:text).join
     end

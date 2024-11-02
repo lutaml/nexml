@@ -9,9 +9,14 @@ module Moxml
           effort: options[:strict] ? :strict : :tolerant,
           smart: true,
         }
-        ::Ox.load(xml, mode: :generic, effort: parse_options[:effort])
+        doc = ::Ox::Document.new
+        doc << ::Ox.parse(xml, parse_options)
+        doc
       rescue ::Ox::ParseError => e
-        raise Moxml::ParseError.new(e.message)
+        if options[:strict] || e.message !~ /document not terminated/
+          raise Moxml::ParseError.new(e.message)
+        end
+        doc
       end
 
       def self.create_document
@@ -91,8 +96,16 @@ module Moxml
         case node
         when ::Ox::Comment
           "<!-- #{node.value} -->"
-        when ::Ox::InstNode
-          "<?#{node.name} #{node.value}?>"
+        when ::Ox::Node
+          case node.name
+          when "xml-stylesheet", "php"
+            "<?#{node.name} #{node.value}?>"
+          else
+            ::Ox.dump(node,
+                      indent: options[:indent] || -1,
+                      with_xml: options[:xml_declaration],
+                      with_instructions: true)
+          end
         else
           ::Ox.dump(node,
                     indent: options[:indent] || -1,
@@ -111,7 +124,9 @@ module Moxml
       end
 
       def self.node_name(node)
-        node.respond_to?(:name) ? node.name : nil
+        return nil unless node.respond_to?(:name)
+        name = node.name.to_s
+        name.sub(/^[^:]+:/, "") # Remove namespace prefix for element names
       end
 
       def self.node_type(node)

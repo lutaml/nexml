@@ -18,7 +18,9 @@ module Moxml
     end
 
     def attributes
-      adapter.attributes(@native)
+      adapter.attributes(@native).map do |name, value|
+        Attribute.new([name, value], context)
+      end
     end
 
     def remove_attribute(name)
@@ -26,19 +28,20 @@ module Moxml
     end
 
     def add_namespace(prefix, uri)
-      adapter.create_namespace(@native, prefix, uri)
+      ns = adapter.create_namespace(@native, prefix, uri)
+      adapter.set_namespace(@native, ns)
       self
+    end
+
+    def namespace
+      ns = adapter.namespace(@native)
+      ns ? Namespace.new(ns, context) : nil
     end
 
     def namespaces
       adapter.namespace_definitions(@native).map do |ns|
         Namespace.new(ns, context)
       end
-    end
-
-    def namespace
-      ns = adapter.namespace(@native)
-      ns ? Namespace.new(ns, context) : nil
     end
 
     def namespace=(ns)

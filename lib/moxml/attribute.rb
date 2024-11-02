@@ -2,10 +2,11 @@
 module Moxml
   class Attribute < Node
     def name
-      adapter.attribute_name(@native)
+      @name ||= adapter.attribute_name(@native)
     end
 
     def name=(new_name)
+      @name = new_name
       adapter.set_attribute_name(@native, new_name)
     end
 

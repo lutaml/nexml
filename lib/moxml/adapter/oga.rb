@@ -5,7 +5,7 @@ module Moxml
     class Oga < Base
       def self.parse(xml, options = {})
         ::Oga.parse_xml(xml, strict: options[:strict])
-      rescue ::Oga::ParseError => e
+      rescue ::Oga::XML::SyntaxError => e
         raise Moxml::ParseError.new(e.message)
       end
 
@@ -42,7 +42,8 @@ module Moxml
       end
 
       def self.node_name(node)
-        node.name
+        return nil unless node.respond_to?(:name)
+        node.name.to_s.sub(/^[^:]+:/, "") # Remove namespace prefix
       end
 
       def self.node_type(node)
@@ -56,22 +57,15 @@ module Moxml
         else :unknown
         end
       end
+      def self.text_content(node)
+        node.respond_to?(:text) ? node.text : node.to_s
+      end
 
       def self.children(node)
-        length = node.children.length
-        preserve_last = true
-
-        node.children.map.with_index do |child, idx|
-          if preserve_last && idx == length - 1 && child.is_a?(::Oga::XML::Text)
-            child.text
-          elsif child.is_a?(::Oga::XML::Text)
-            from_us = child.instance_variable_get(:@from_moxml)
-            !from_us && child.text.strip.empty? ? nil : child.text
-          else
-            preserve_last = false
-            child
-          end
-        end.compact
+        return [] unless node.respond_to?(:children)
+        node.children.reject do |child|
+          child.is_a?(::Oga::XML::Text) && child.text.strip.empty?
+        end
       end
 
       def self.parent(node)
@@ -100,12 +94,11 @@ module Moxml
         end
       end
 
-      def self.set_attribute(element, name, value)
-        attr = ::Oga::XML::Attribute.new(name: name.to_s)
-        attr.element = element
-        attr.instance_variable_set(:@value, encode_entities(value.to_s, true))
-        attr.instance_variable_set(:@decoded, true)
-        element.attributes << attr
+      def self.create_attribute(name, value, element = nil)
+        attr = ::Oga::XML::Attribute.new(name: name)
+        attr.value = value.to_s
+        attr.element = element if element
+        attr
       end
 
       def self.get_attribute(element, name)
@@ -114,6 +107,12 @@ module Moxml
 
       def self.remove_attribute(element, name)
         element.unset(name.to_s)
+      end
+
+      def self.set_attribute(element, name, value)
+        return unless element
+        attr = create_attribute(name, value, element)
+        element.attributes << attr
       end
 
       def self.add_child(element, child)
@@ -204,8 +203,6 @@ module Moxml
 
         attr_reader :out
 
-        private
-
         def process_node(node)
           case node
           when ::Oga::XML::Element
@@ -213,18 +210,17 @@ module Moxml
           when ::Oga::XML::Text
             @out += encode_entities(node.text)
           when ::Oga::XML::Comment
-            line_break
-            @out += "<!--#{node.text}-->"
+            @out += "<!-- #{node.text} -->"
           when ::Oga::XML::Cdata
-            line_break
             @out += "<![CDATA[#{node.text}]]>"
           when ::Oga::XML::ProcessingInstruction
-            line_break
-            @out += "<?#{node.name} #{node.text}?>"
+            @out += "<?#{node.name} #{normalize_pi_content(node.text)}?>"
           when String
             @out += encode_entities(node)
           end
         end
+
+        private
 
         def dump_element(element)
           attrs = dump_attributes(element)
@@ -256,6 +252,12 @@ module Moxml
 
         def encode_entities(text, attr = false)
           Moxml::Adapter::Base.encode_entities(text, attr)
+        end
+
+        private
+
+        def normalize_pi_content(content)
+          content.to_s.gsub(/['"]/, "")
         end
       end
     end

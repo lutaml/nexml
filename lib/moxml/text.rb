@@ -6,7 +6,7 @@ module Moxml
     end
 
     def content=(text)
-      adapter.set_text_content(@native, text)
+      adapter.set_text_content(@native, text.to_s)
       self
     end
 
