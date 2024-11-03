@@ -1,12 +1,18 @@
 # lib/moxml/declaration.rb
 module Moxml
   class Declaration < Node
+    ALLOWED_VERSIONS = ["1.0", "1.1"].freeze
+    ALLOWED_STANDALONE = ["yes", "no"].freeze
+
     def version
       extract_attribute("version")
     end
 
     def version=(new_version)
-      update_content("version", new_version)
+      unless ALLOWED_VERSIONS.include?(new_version)
+        raise ValidationError, "Invalid XML version: #{new_version}"
+      end
+      set_attribute("version", new_version)
     end
 
     def encoding
@@ -14,7 +20,14 @@ module Moxml
     end
 
     def encoding=(new_encoding)
-      update_content("encoding", new_encoding)
+      if new_encoding
+        begin
+          Encoding.find(new_encoding)
+        rescue ArgumentError
+          raise ValidationError, "Invalid encoding: #{new_encoding}"
+        end
+      end
+      set_attribute("encoding", new_encoding)
     end
 
     def standalone
@@ -22,7 +35,10 @@ module Moxml
     end
 
     def standalone=(new_standalone)
-      update_content("standalone", new_standalone)
+      unless new_standalone.nil? || ALLOWED_STANDALONE.include?(new_standalone)
+        raise ValidationError, "Invalid standalone value: #{new_standalone}"
+      end
+      set_attribute("standalone", new_standalone)
     end
 
     def declaration?
@@ -37,19 +53,24 @@ module Moxml
       match && match[1]
     end
 
-    def update_content(name, value)
-      content = @native.content || ""
+    def set_attribute(name, value)
+      attrs = current_attributes
       if value.nil?
-        content.gsub!(/\s*#{name}="[^"]*"/, "")
+        attrs.delete(name)
       else
-        if content.include?("#{name}=\"")
-          content.gsub!(/#{name}="[^"]*"/, "#{name}=\"#{value}\"")
-        else
-          content << " #{name}=\"#{value}\""
-        end
+        attrs[name] = value
       end
-      @native.content = content.strip
-      self
+      update_content(attrs)
+    end
+
+    def current_attributes
+      @native.content.to_s.scan(/(\w+)="([^"]*)"/).each_with_object({}) do |(name, value), hash|
+        hash[name] = value
+      end
+    end
+
+    def update_content(attrs)
+      @native.content = attrs.map { |k, v| %{#{k}="#{v}"} }.join(" ")
     end
   end
 end

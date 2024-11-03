@@ -24,6 +24,12 @@ module Moxml
           ::Ox::Document.new
         end
 
+        def create_native_declaration(version, encoding, standalone)
+          inst = ::Ox::Instruction.new("xml")
+          inst.value = build_declaration_attrs(version, encoding, standalone)
+          inst
+        end
+
         def create_native_element(name)
           element = ::Ox::Element.new(name)
           element.instance_variable_set(:@attributes, {})

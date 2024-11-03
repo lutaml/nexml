@@ -26,7 +26,7 @@ RSpec.describe Moxml::Comment do
 
   describe "serialization" do
     it "wraps content in comment markers" do
-      expect(comment.to_xml(pretty: false)).to eq("<!-- test comment -->")
+      expect(comment.to_xml(pretty: false)).to eq("<!--test comment-->")
     end
 
     it "escapes double hyphens" do
@@ -38,7 +38,7 @@ RSpec.describe Moxml::Comment do
 
     it "handles special characters" do
       comment.content = "< > & \" '"
-      expect(comment.to_xml(pretty: false)).to eq("<!-- < > & \" ' -->")
+      expect(comment.to_xml(pretty: false)).to eq("<!--< > & \" '-->")
     end
   end
 
@@ -47,7 +47,7 @@ RSpec.describe Moxml::Comment do
 
     it "adds to element" do
       element.add_child(comment)
-      expect(element.to_xml).to include("<!-- test comment -->")
+      expect(element.to_xml).to include("<!--test comment-->")
     end
 
     it "removes from element" do

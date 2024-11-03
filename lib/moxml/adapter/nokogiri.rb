@@ -46,17 +46,12 @@ module Moxml
         end
 
         def create_native_declaration(version, encoding, standalone)
-          doc = ::Nokogiri::XML::Document.new
-          doc.create_internal_subset("xml", nil, nil)
-          declaration = ::Nokogiri::XML::ProcessingInstruction.new(doc, "xml", declaration_content(version, encoding, standalone))
-          declaration
-        end
-
-        def declaration_content(version, encoding, standalone)
-          content = "version=\"#{version}\""
-          content << " encoding=\"#{encoding}\"" if encoding
-          content << " standalone=\"#{standalone}\"" if standalone
-          content
+          decl = ::Nokogiri::XML::ProcessingInstruction.new(
+            ::Nokogiri::XML::Document.new,
+            "xml",
+            build_declaration_attrs(version, encoding, standalone)
+          )
+          decl
         end
 
         def set_namespace(element, ns)
@@ -226,6 +221,15 @@ module Moxml
             encoding: options[:encoding],
             save_with: save_options,
           )
+        end
+
+        private
+
+        def build_declaration_attrs(version, encoding, standalone)
+          attrs = { "version" => version }
+          attrs["encoding"] = encoding if encoding
+          attrs["standalone"] = standalone if standalone
+          attrs.map { |k, v| %{#{k}="#{v}"} }.join(" ")
         end
       end
     end

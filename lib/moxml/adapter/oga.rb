@@ -39,13 +39,10 @@ module Moxml
         end
 
         def create_native_declaration(version, encoding, standalone)
-          doc = ::Oga::XML::Document.new
-          doc.xml_declaration = ::Oga::XML::XmlDeclaration.new(
-            version: version,
-            encoding: encoding,
-            standalone: standalone,
+          ::Oga::XML::ProcessingInstruction.new(
+            name: "xml",
+            text: build_declaration_attrs(version, encoding, standalone),
           )
-          doc
         end
 
         def create_native_namespace(element, prefix, uri)
