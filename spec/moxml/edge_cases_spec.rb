@@ -34,19 +34,38 @@ RSpec.describe "Moxml Edge Cases" do
       expect(cdata.to_xml).to include("]]]]><![CDATA[>]]]]><![CDATA[>]]]]><![CDATA[>")
     end
 
-    it "handles comments with double hyphens" do
-      comment_text = "-- test -- comment --"
-      doc = context.create_document
-      comment = doc.create_comment(comment_text)
-      expect(comment.to_xml).not_to include("--")
-      expect(comment.to_xml).to include("- - test - - comment - -")
-    end
-
     it "handles invalid processing instruction content" do
       content = "?> invalid"
       doc = context.create_document
       pi = doc.create_processing_instruction("test", content)
       expect(pi.to_xml).not_to include("?>?>")
+    end
+
+    it "rejects comments with double hyphens" do
+      doc = context.create_document
+      expect {
+        doc.create_comment("-- test -- comment --")
+      }.to raise_error(Moxml::ValidationError, "XML comment cannot contain double hyphens (--)")
+    end
+
+    it "rejects comments starting with hyphen" do
+      doc = context.create_document
+      expect {
+        doc.create_comment("-starting with hyphen")
+      }.to raise_error(Moxml::ValidationError, "XML comment cannot start or end with a hyphen")
+    end
+
+    it "rejects comments ending with hyphen" do
+      doc = context.create_document
+      expect {
+        doc.create_comment("ending with hyphen-")
+      }.to raise_error(Moxml::ValidationError, "XML comment cannot start or end with a hyphen")
+    end
+
+    it "accepts valid comments" do
+      doc = context.create_document
+      comment = doc.create_comment("valid - comment")
+      expect(comment.content).to eq("valid - comment")
     end
   end
 

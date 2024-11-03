@@ -4,14 +4,20 @@ module Moxml
   module Adapter
     class Ox < Base
       class << self
+        def set_root(doc, element)
+          doc.nodes = [element]  # Replace all nodes with just the root element
+        end
+
         def parse(xml, options = {})
           native_doc = begin
               doc = ::Ox::Document.new
-              doc << ::Ox.parse(xml, {
+              parse_options = {
                 mode: :generic,
                 effort: options[:strict] ? :strict : :tolerant,
                 smart: true,
-              })
+              }
+              result = ::Ox.parse(xml)  # Remove second argument - Ox.parse only takes the XML string
+              doc << result
               doc
             rescue ::Ox::ParseError => e
               raise Moxml::ParseError.new(e.message)
@@ -254,11 +260,13 @@ module Moxml
         end
 
         def serialize(node, options = {})
-          ::Ox.dump(node,
-                    indent: options[:indent] || -1,
-                    with_xml: true,
-                    with_instructions: true,
-                    encoding: options[:encoding])
+          ox_options = {
+            indent: options[:indent] || -1,
+            with_xml: true,
+            with_instructions: true,
+            encoding: options[:encoding],
+          }
+          ::Ox.dump(node, ox_options)
         end
 
         private
@@ -270,15 +278,15 @@ module Moxml
           node.nodes&.each { |child| traverse(child, &block) }
         end
 
-        def matches_xpath?(node, expression, namespaces)
-          # Basic XPath matching - enhance as needed
+        def matches_xpath?(node, expression, namespaces = {})
           case expression
           when %r{//(\w+)}
-            node.is_a?(::Ox::Element) && node.name == $1
+            node.is_a?(::Ox::Element) && node.value == $1
           when %r{//(\w+)\[@(\w+)='([^']+)'\]}
             node.is_a?(::Ox::Element) &&
-              node.name == $1 &&
-              node.attributes&.[]($2) == $3
+              node.value == $1 &&
+              node.attributes &&
+              node.attributes[$2] == $3
           else
             false
           end

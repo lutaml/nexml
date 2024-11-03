@@ -4,6 +4,11 @@ module Moxml
   module Adapter
     class Oga < Base
       class << self
+        def set_root(doc, element)
+          doc.children.clear  # Clear any existing children
+          doc.children << element
+        end
+
         def parse(xml, options = {})
           native_doc = begin
               ::Oga.parse_xml(xml, strict: options[:strict])

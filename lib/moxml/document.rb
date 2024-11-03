@@ -9,6 +9,10 @@ require_relative "namespace"
 
 module Moxml
   class Document < Node
+    def root=(element)
+      adapter.set_root(@native, element.native)
+    end
+
     def root
       root_element = adapter.root(@native)
       root_element ? Element.wrap(root_element, context) : nil

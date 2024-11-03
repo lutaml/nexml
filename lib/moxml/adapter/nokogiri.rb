@@ -4,6 +4,10 @@ module Moxml
   module Adapter
     class Nokogiri < Base
       class << self
+        def set_root(doc, element)
+          doc.root = element
+        end
+
         def parse(xml, options = {})
           native_doc = begin
               ::Nokogiri::XML(xml, nil, options[:encoding]) do |config|

@@ -10,35 +10,37 @@ module Moxml
 
     def build(native_doc)
       @current_doc = Document.new(native_doc, context)
-      visit(native_doc)
+      visit_node(native_doc)
       @current_doc
     end
 
     private
 
-    def visit(node)
+    def visit_node(node)
       method_name = "visit_#{node_type(node)}"
       if respond_to?(method_name, true)
         send(method_name, node)
       end
     end
 
-    def visit_document(node)
+    def visit_document(doc)
       @node_stack.push(@current_doc)
-      visit_children(node)
+      visit_children(doc)
       @node_stack.pop
     end
 
     def visit_element(node)
       element = Element.new(node, context)
       if @node_stack.empty?
-        @current_doc.add_child(element)
+        # For root element, we need to set it directly
+        adapter.set_root(@current_doc.native, element.native)
       else
         @node_stack.last.add_child(element)
       end
       @node_stack.push(element)
       visit_children(node)
       @node_stack.pop
+      element
     end
 
     def visit_text(node)
@@ -58,7 +60,7 @@ module Moxml
     end
 
     def visit_children(node)
-      children(node).each { |child| visit(child) }
+      children(node).each { |child| visit_node(child) }
     end
 
     def node_type(node)
@@ -67,6 +69,10 @@ module Moxml
 
     def children(node)
       context.config.adapter.children(node)
+    end
+
+    def adapter
+      context.config.adapter
     end
   end
 end

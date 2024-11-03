@@ -9,6 +9,10 @@ module Moxml
       class << self
         include XmlUtils
 
+        def set_root(doc, element)
+          raise NotImplementedError
+        end
+
         def parse(xml, options = {})
           raise NotImplementedError
         end
