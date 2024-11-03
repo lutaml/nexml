@@ -1,4 +1,3 @@
-# lib/moxml/namespace.rb
 module Moxml
   class Namespace < Node
     def prefix

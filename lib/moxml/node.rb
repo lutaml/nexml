@@ -1,6 +1,10 @@
-# lib/moxml/node.rb
+require_relative "xml_utils"
+require_relative "node_set"
+
 module Moxml
   class Node
+    include XmlUtils
+
     attr_reader :native, :context
 
     def initialize(native, context)
@@ -57,10 +61,6 @@ module Moxml
       self
     end
 
-    def ==(other)
-      self.class == other.class && @native == other.native
-    end
-
     def to_xml(options = {})
       adapter.serialize(@native, default_options.merge(options))
     end
@@ -71,6 +71,10 @@ module Moxml
 
     def at_xpath(expression, namespaces = {})
       Node.wrap(adapter.at_xpath(@native, expression, namespaces), context)
+    end
+
+    def ==(other)
+      self.class == other.class && @native == other.native
     end
 
     def self.wrap(node, context)
@@ -103,10 +107,8 @@ module Moxml
 
     def prepare_node(node)
       case node
-      when String
-        Text.new(adapter.create_text(node), context)
-      when Node
-        node
+      when String then Text.new(adapter.create_text(node), context)
+      when Node then node
       else
         raise ArgumentError, "Invalid node type: #{node.class}"
       end

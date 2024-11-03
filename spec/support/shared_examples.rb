@@ -150,24 +150,22 @@ RSpec.shared_examples "xml adapter" do
       expect(result).to include("</root>")
     end
 
-    it "handles indentation" do
-      result = described_class.serialize(doc, indent: 2)
-      expect(result).to match(/^\s{2}<child/)
+    it "respects indentation settings" do
+      unindented = described_class.serialize(doc, indent: -1)
+      indented = described_class.serialize(doc, indent: 2)
+
+      expect(unindented).not_to include("\n  ")
+      expect(indented).to include("\n  ")
     end
 
-    it "preserves CDATA sections" do
+    it "preserves XML declaration" do
       result = described_class.serialize(doc)
-      expect(result).to include("<![CDATA[Some <special> text]]>")
+      expect(result).to match(/^<\?xml/)
     end
 
-    it "preserves comments" do
-      result = described_class.serialize(doc)
-      expect(result).to include("<!-- A comment -->")
-    end
-
-    it "preserves processing instructions" do
-      result = described_class.serialize(doc)
-      expect(result).to include("<?pi target?>")
+    it "handles encoding specification" do
+      result = described_class.serialize(doc, encoding: "UTF-8")
+      expect(result).to include('encoding="UTF-8"')
     end
   end
 

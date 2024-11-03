@@ -2,34 +2,54 @@
 module Moxml
   class Declaration < Node
     def version
-      adapter.declaration_version(@native)
+      extract_attribute("version")
     end
 
     def version=(new_version)
-      adapter.set_declaration_version(@native, new_version)
-      self
+      update_content("version", new_version)
     end
 
     def encoding
-      adapter.declaration_encoding(@native)
+      extract_attribute("encoding")
     end
 
     def encoding=(new_encoding)
-      adapter.set_declaration_encoding(@native, new_encoding)
-      self
+      update_content("encoding", new_encoding)
     end
 
     def standalone
-      adapter.declaration_standalone(@native)
+      extract_attribute("standalone")
     end
 
     def standalone=(new_standalone)
-      adapter.set_declaration_standalone(@native, new_standalone)
-      self
+      update_content("standalone", new_standalone)
     end
 
     def declaration?
       true
+    end
+
+    private
+
+    def extract_attribute(name)
+      return nil unless @native.content
+      match = @native.content.match(/#{name}="([^"]*)"/)
+      match && match[1]
+    end
+
+    def update_content(name, value)
+      content = @native.content || ""
+      if value.nil?
+        content.gsub!(/\s*#{name}="[^"]*"/, "")
+      else
+        if content.include?("#{name}=\"")
+          content.gsub!(/#{name}="[^"]*"/, "#{name}=\"#{value}\"")
+        else
+          content << " #{name}=\"#{value}\""
+        end
+      end
+      @native.content = content.strip
+      self
     end
   end
 end

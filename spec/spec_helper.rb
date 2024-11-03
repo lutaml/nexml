@@ -1,10 +1,7 @@
-# spec/spec_helper.rb
 require "moxml"
-require "stringio"
 
 Dir[File.expand_path("../support/**/*.rb", __FILE__)].each { |f| require f }
 
-# Load shared examples
 require_relative "support/shared_examples"
 
 RSpec.configure do |config|
@@ -24,4 +21,10 @@ RSpec.configure do |config|
 
   config.order = :random
   Kernel.srand config.seed
+end
+
+Moxml.configure do |config|
+  config.adapter = :nokogiri
+  config.strict_parsing = true
+  config.default_encoding = "UTF-8"
 end

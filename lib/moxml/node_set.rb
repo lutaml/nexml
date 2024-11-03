@@ -1,4 +1,3 @@
-# lib/moxml/node_set.rb
 module Moxml
   class NodeSet
     include Enumerable
@@ -47,30 +46,17 @@ module Moxml
       map { |node| node }
     end
 
-    def map
-      return to_enum(:map) unless block_given?
-      nodes.map { |node| yield Node.wrap(node, context) }
-    end
-
-    def select
-      return to_enum(:select) unless block_given?
-      NodeSet.new(
-        nodes.select { |node| yield Node.wrap(node, context) },
-        context
-      )
-    end
-
-    def remove
-      each(&:remove)
-      self
-    end
-
     def +(other)
       self.class.new(nodes + other.nodes, context)
     end
 
     def text
       map(&:text).join
+    end
+
+    def remove
+      each(&:remove)
+      self
     end
   end
 end

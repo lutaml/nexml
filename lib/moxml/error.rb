@@ -1,4 +1,3 @@
-# lib/moxml/errors.rb
 module Moxml
   class Error < StandardError; end
 
@@ -15,13 +14,5 @@ module Moxml
   class ValidationError < Error; end
   class XPathError < Error; end
   class NamespaceError < Error; end
-
-  class AdapterError < Error
-    attr_reader :adapter
-
-    def initialize(message, adapter)
-      @adapter = adapter
-      super("#{message} (adapter: #{adapter})")
-    end
-  end
+  class AdapterError < Error; end
 end

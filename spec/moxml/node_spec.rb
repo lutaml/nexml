@@ -72,15 +72,21 @@ RSpec.describe Moxml::Node do
   end
 
   describe "#to_xml" do
-    it "serializes to XML" do
-      expect(root.to_xml(pretty: false)).to match(/<root><child>text<\/child><\/root>/)
+    let(:context) { Moxml.new }
+    let(:doc) { context.parse("<root><child>text</child></root>") }
+
+    it "uses native serialization" do
+      expect(context.config.adapter).to receive(:serialize)
+          .with(doc.native, hash_including(indent: 2))
+
+      doc.to_xml(indent: 2)
     end
 
-    it "respects indentation when pretty printing" do
-      root.to_xml(indent: 2).split("\n").tap do |lines|
-        expect(lines[0]).to eq("<root>")
-        expect(lines[1]).to match(/^\s{2}<child>/)
-      end
+    it "passes through serialization options" do
+      expect(context.config.adapter).to receive(:serialize)
+          .with(doc.native, hash_including(encoding: "UTF-8", indent: 4))
+
+      doc.to_xml(encoding: "UTF-8", indent: 4)
     end
   end
 

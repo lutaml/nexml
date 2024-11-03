@@ -1,4 +1,6 @@
-# lib/moxml/element.rb
+require_relative "attribute"
+require_relative "namespace"
+
 module Moxml
   class Element < Node
     def name
@@ -10,37 +12,44 @@ module Moxml
     end
 
     def []=(name, value)
-      adapter.set_attribute(@native, name, value)
+      adapter.set_attribute(@native, name, normalize_xml_value(value))
     end
 
     def [](name)
       adapter.get_attribute(@native, name)
     end
 
+    def attribute(name)
+      value = adapter.get_attribute(@native, name)
+      value && Attribute.new(name, value, context)
+    end
+
     def attributes
       adapter.attributes(@native).map do |name, value|
-        Attribute.new([name, value], context)
+        Attribute.new(name, value, context)
       end
     end
 
     def remove_attribute(name)
       adapter.remove_attribute(@native, name)
+      self
     end
 
     def add_namespace(prefix, uri)
+      validate_uri(uri)
       ns = adapter.create_namespace(@native, prefix, uri)
-      adapter.set_namespace(@native, ns)
+      adapter.set_namespace(@native, ns) if ns
       self
     end
 
     def namespace
       ns = adapter.namespace(@native)
-      ns ? Namespace.new(ns, context) : nil
+      ns && Namespace.new(ns, context)
     end
 
     def namespaces
-      adapter.namespace_definitions(@native).map do |ns|
-        Namespace.new(ns, context)
+      adapter.namespace_definitions(@native).map do |prefix, uri|
+        Namespace.new([prefix, uri], context)
       end
     end
 
@@ -53,7 +62,7 @@ module Moxml
     end
 
     def text=(content)
-      adapter.set_text_content(@native, content)
+      adapter.set_text_content(@native, normalize_xml_value(content))
       self
     end
 
@@ -67,28 +76,20 @@ module Moxml
       self
     end
 
-    def attributes
-      adapter.attributes(@native).map do |name, native_attr|
-        Attribute.new(native_attr, context)
-      end
+    # Fluent interface methods
+    def with_attribute(name, value)
+      self[name] = value
+      self
     end
 
-    def attribute(name)
-      native_attr = adapter.get_attribute(@native, name)
-      native_attr ? Attribute.new(native_attr, context) : nil
+    def with_namespace(prefix, uri)
+      add_namespace(prefix, uri)
+      self
     end
 
-    def []=(name, value)
-      if value.nil?
-        remove_attribute(name)
-      else
-        adapter.set_attribute(@native, name, value)
-      end
-    end
-
-    def [](name)
-      attr = attribute(name)
-      attr&.value
+    def with_text(content)
+      self.text = content
+      self
     end
   end
 end

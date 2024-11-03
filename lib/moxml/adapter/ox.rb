@@ -3,332 +3,279 @@ require_relative "base"
 module Moxml
   module Adapter
     class Ox < Base
-      def self.parse(xml, options = {})
-        parse_options = {
-          mode: :generic,
-          effort: options[:strict] ? :strict : :tolerant,
-          smart: true,
-        }
-        doc = ::Ox::Document.new
-        doc << ::Ox.parse(xml, parse_options)
-        doc
-      rescue ::Ox::ParseError => e
-        if options[:strict] || e.message !~ /document not terminated/
-          raise Moxml::ParseError.new(e.message)
+      class << self
+        def parse(xml, options = {})
+          native_doc = begin
+              doc = ::Ox::Document.new
+              doc << ::Ox.parse(xml, {
+                mode: :generic,
+                effort: options[:strict] ? :strict : :tolerant,
+                smart: true,
+              })
+              doc
+            rescue ::Ox::ParseError => e
+              raise Moxml::ParseError.new(e.message)
+            end
+
+          DocumentBuilder.new(Context.new(:ox)).build(native_doc)
         end
-        doc
-      end
 
-      def self.create_document
-        ::Ox::Document.new
-      end
+        def create_document
+          ::Ox::Document.new
+        end
 
-      def self.create_element(name)
-        element = ::Ox::Element.new(name)
-        element.instance_variable_set(:@attributes, {})
-        element.instance_variable_set(:@nodes, [])
-        element
-      end
+        def create_native_element(name)
+          element = ::Ox::Element.new(name)
+          element.instance_variable_set(:@attributes, {})
+          element
+        end
 
-      def self.create_text(content)
-        encode_entities(content.to_s)
-      end
+        def create_native_text(content)
+          content
+        end
 
-      def self.create_cdata(content)
-        ::Ox::CData.new(content.to_s)
-      end
+        def create_native_cdata(content)
+          ::Ox::CData.new(content)
+        end
 
-      def self.create_comment(content)
-        ::Ox::Comment.new(content.to_s)
-      end
+        def create_native_comment(content)
+          ::Ox::Comment.new(content)
+        end
 
-      def self.namespace_uri(namespace)
-        namespace.last
-      end
+        def create_native_processing_instruction(target, content)
+          inst = ::Ox::Instruction.new(target)
+          inst.value = content
+          inst
+        end
 
-      def self.namespace_prefix(namespace)
-        prefix = namespace.first
-        prefix == "xmlns" ? nil : prefix.sub("xmlns:", "")
-      end
+        def create_native_declaration(version, encoding, standalone)
+          doc = ::Ox::Document.new
+          doc.version = version
+          doc.encoding = encoding
+          doc.standalone = standalone
+          doc
+        end
 
-      def self.namespace_definitions(node)
-        namespaces = []
-        if node.respond_to?(:attributes) && node.attributes
-          node.attributes.each do |name, value|
-            next unless name.start_with?("xmlns")
-            prefix = name == "xmlns" ? nil : name.sub("xmlns:", "")
-            namespaces << [prefix, value]
+        def create_native_namespace(element, prefix, uri)
+          element.attributes ||= {}
+          attr_name = prefix ? "xmlns:#{prefix}" : "xmlns"
+          element.attributes[attr_name] = uri
+          [prefix, uri]
+        end
+
+        def set_namespace(element, ns)
+          prefix, uri = ns
+          element.attributes ||= {}
+          attr_name = prefix ? "xmlns:#{prefix}" : "xmlns"
+          element.attributes[attr_name] = uri
+        end
+
+        def namespace(element)
+          return nil unless element.attributes
+          xmlns_attr = element.attributes.find { |k, _| k.start_with?("xmlns:") || k == "xmlns" }
+          return nil unless xmlns_attr
+          prefix = xmlns_attr[0] == "xmlns" ? nil : xmlns_attr[0].sub("xmlns:", "")
+          [prefix, xmlns_attr[1]]
+        end
+
+        def processing_instruction_target(node)
+          node.name
+        end
+
+        def node_type(node)
+          case node
+          when ::Ox::Element then :element
+          when String then :text
+          when ::Ox::CData then :cdata
+          when ::Ox::Comment then :comment
+          when ::Ox::Instruction then :processing_instruction
+          when ::Ox::Document then :document
+          else :unknown
           end
         end
-        namespaces
-      end
 
-      def self.create_processing_instruction(target, content)
-        inst = ::Ox::Instruction.new(target.to_s)
-        inst.value = content.to_s
-        inst
-      end
+        def node_name(node)
+          node.value rescue node.name
+        end
 
-      def self.processing_instruction_target(node)
-        node.value
-      end
+        def set_node_name(node, name)
+          node.value = name if node.respond_to?(:value=)
+          node.name = name if node.respond_to?(:name=)
+        end
 
-      def self.processing_instruction_content(node)
-        node.value
-      end
+        def children(node)
+          return [] unless node.respond_to?(:nodes)
+          node.nodes || []
+        end
 
-      def self.set_processing_instruction_target(node, target)
-        node.value = target.to_s
-      end
+        def parent(node)
+          node.respond_to?(:parent) ? node.parent : nil
+        end
 
-      def self.set_processing_instruction_content(node, content)
-        node.value = content.to_s
-      end
+        def next_sibling(node)
+          return nil unless parent = node.parent
+          siblings = parent.nodes
+          idx = siblings.index(node)
+          idx ? siblings[idx + 1] : nil
+        end
 
-      def self.create_namespace(prefix, uri)
-        prefix = prefix.to_s
-        attr_name = prefix.empty? ? "xmlns" : "xmlns:#{prefix}"
-        [attr_name, uri.to_s]
-      end
+        def previous_sibling(node)
+          return nil unless parent = node.parent
+          siblings = parent.nodes
+          idx = siblings.index(node)
+          idx && idx > 0 ? siblings[idx - 1] : nil
+        end
 
-      def self.serialize(node, options = {})
-        options = normalize_options(options)
-        case node
-        when ::Ox::Comment
-          "<!-- #{node.value} -->"
-        when ::Ox::Node
-          case node.name
-          when "xml-stylesheet", "php"
-            "<?#{node.name} #{node.value}?>"
-          else
-            ::Ox.dump(node,
-                      indent: options[:indent] || -1,
-                      with_xml: options[:xml_declaration],
-                      with_instructions: true)
+        def document(node)
+          current = node
+          while current && current.respond_to?(:parent) && current.parent
+            current = current.parent
           end
-        else
-          ::Ox.dump(node,
-                    indent: options[:indent] || -1,
-                    with_xml: options[:xml_declaration],
-                    with_instructions: true)
+          current
         end
-      end
 
-      def self.normalize_options(options)
-        {
-          indent: 2,
-          pretty: true,
-          encoding: "UTF-8",
-          xml_declaration: true,
-        }.merge(options)
-      end
-
-      def self.node_name(node)
-        return nil unless node.respond_to?(:name)
-        name = node.name.to_s
-        name.sub(/^[^:]+:/, "") # Remove namespace prefix for element names
-      end
-
-      def self.node_type(node)
-        case node
-        when ::Ox::Element then :element
-        when String then :text
-        when ::Ox::CData then :cdata
-        when ::Ox::Comment then :comment
-        when ::Ox::Instruction then :processing_instruction
-        when ::Ox::Document then :document
-        else :unknown
+        def root(document)
+          document.nodes&.find { |node| node.is_a?(::Ox::Element) }
         end
-      end
 
-      def self.children(node)
-        return [] unless node.respond_to?(:nodes)
-
-        nodes = node.nodes || []
-        length = nodes.length
-        preserve_last = true
-
-        nodes.map.with_index do |child, idx|
-          if preserve_last && idx == length - 1 && child.is_a?(String)
-            child
-          elsif child.is_a?(String)
-            child.strip.empty? ? nil : child
-          else
-            preserve_last = false
-            child
-          end
-        end.compact
-      end
-
-      def self.parent(node)
-        node.respond_to?(:parent) ? node.parent : nil
-      end
-
-      def self.previous_sibling(node)
-        return nil unless node.respond_to?(:parent) && node.parent
-        siblings = node.parent.nodes
-        idx = siblings.index(node)
-        idx && idx > 0 ? siblings[idx - 1] : nil
-      end
-
-      def self.next_sibling(node)
-        return nil unless node.respond_to?(:parent) && node.parent
-        siblings = node.parent.nodes
-        idx = siblings.index(node)
-        idx ? siblings[idx + 1] : nil
-      end
-
-      def self.document(node)
-        current = node
-        while current && current.respond_to?(:parent) && current.parent
-          current = current.parent
+        def attributes(element)
+          return {} unless element.respond_to?(:attributes) && element.attributes
+          element.attributes.reject { |k, _| k.start_with?("xmlns") }
         end
-        current
-      end
 
-      def self.root(document)
-        children(document).find { |node| node.is_a?(::Ox::Element) }
-      end
+        def set_attribute(element, name, value)
+          element.attributes ||= {}
+          element.attributes[name.to_s] = value.to_s
+        end
 
-      def self.attributes(element)
-        return {} unless element.respond_to?(:attributes) && element.attributes
-        element.attributes.reject { |k, _| k.start_with?("xmlns") }
-      end
+        def get_attribute(element, name)
+          return nil unless element.respond_to?(:attributes) && element.attributes
+          element.attributes[name.to_s]
+        end
 
-      def self.set_attribute(element, name, value)
-        element.attributes ||= {}
-        element.attributes[name.to_s] = encode_entities(value.to_s, true)
-      end
+        def remove_attribute(element, name)
+          return unless element.respond_to?(:attributes) && element.attributes
+          element.attributes.delete(name.to_s)
+        end
 
-      def self.get_attribute(element, name)
-        return nil unless element.respond_to?(:attributes) && element.attributes
-        element.attributes[name.to_s]
-      end
-
-      def self.remove_attribute(element, name)
-        return unless element.respond_to?(:attributes) && element.attributes
-        element.attributes.delete(name.to_s)
-      end
-
-      def self.add_child(element, child)
-        element.nodes ||= []
-        case child
-        when String
-          element.nodes << encode_entities(child)
-        else
+        def add_child(element, child)
+          element.nodes ||= []
           element.nodes << child
         end
-      end
 
-      def self.add_previous_sibling(node, sibling)
-        return unless node.parent
-        idx = node.parent.nodes.index(node)
-        node.parent.nodes.insert(idx, sibling) if idx
-      end
+        def add_previous_sibling(node, sibling)
+          return unless node.parent
+          idx = node.parent.nodes.index(node)
+          node.parent.nodes.insert(idx, sibling) if idx
+        end
 
-      def self.add_next_sibling(node, sibling)
-        return unless node.parent
-        idx = node.parent.nodes.index(node)
-        node.parent.nodes.insert(idx + 1, sibling) if idx
-      end
+        def add_next_sibling(node, sibling)
+          return unless node.parent
+          idx = node.parent.nodes.index(node)
+          node.parent.nodes.insert(idx + 1, sibling) if idx
+        end
 
-      def self.xpath(node, expression, namespaces = {})
-        result = []
-        traverse(node) do |n|
-          if matches_xpath?(n, expression, namespaces)
-            result << n
+        def remove(node)
+          return unless node.parent
+          node.parent.nodes.delete(node)
+        end
+
+        def replace(node, new_node)
+          return unless node.parent
+          idx = node.parent.nodes.index(node)
+          node.parent.nodes[idx] = new_node if idx
+        end
+
+        def text_content(node)
+          node.is_a?(String) ? node : node.value.to_s
+        end
+
+        def set_text_content(node, content)
+          if node.is_a?(String)
+            node.replace(content.to_s)
+          else
+            node.value = content.to_s
           end
         end
-        result
-      end
 
-      def self.at_xpath(node, expression, namespaces = {})
-        traverse(node) do |n|
-          return n if matches_xpath?(n, expression, namespaces)
+        def cdata_content(node)
+          node.value.to_s
         end
-        nil
-      end
 
-      def self.declaration_version(node)
-        node.respond_to?(:version) ? node.version : "1.0"
-      end
+        def set_cdata_content(node, content)
+          node.value = content.to_s
+        end
 
-      def self.declaration_encoding(node)
-        node.respond_to?(:encoding) ? node.encoding : "UTF-8"
-      end
+        def comment_content(node)
+          node.value.to_s
+        end
 
-      def self.declaration_standalone(node)
-        node.respond_to?(:standalone) ? node.standalone : nil
-      end
+        def set_comment_content(node, content)
+          node.value = content.to_s
+        end
 
-      def self.set_declaration_version(node, version)
-        valid_versions = ["1.0", "1.1"]
-        raise ArgumentError, "Invalid XML version: #{version}" unless valid_versions.include?(version)
-        node.instance_variable_set(:@version, version) if node.respond_to?(:version=)
-      end
+        def processing_instruction_content(node)
+          node.value.to_s
+        end
 
-      def self.set_declaration_encoding(node, encoding)
-        node.instance_variable_set(:@encoding, encoding&.upcase) if node.respond_to?(:encoding=)
-      end
+        def set_processing_instruction_content(node, content)
+          node.value = content.to_s
+        end
 
-      def self.set_declaration_standalone(node, standalone)
-        valid_values = [nil, "yes", "no"]
-        raise ArgumentError, "Invalid standalone value: #{standalone}" unless valid_values.include?(standalone)
-        node.instance_variable_set(:@standalone, standalone) if node.respond_to?(:standalone=)
-      end
-
-      def self.namespace_definitions(node)
-        namespaces = []
-        if node.respond_to?(:attributes) && node.attributes
-          node.attributes.each do |name, value|
+        def namespace_definitions(node)
+          return [] unless node.respond_to?(:attributes) && node.attributes
+          node.attributes.each_with_object([]) do |(name, value), namespaces|
             next unless name.start_with?("xmlns")
             prefix = name == "xmlns" ? nil : name.sub("xmlns:", "")
             namespaces << [prefix, value]
           end
         end
-        namespaces
-      end
 
-      def self.set_namespace(node, namespace)
-        return unless node.respond_to?(:attributes) && namespace
-        node.attributes ||= {}
-        prefix = namespace[0]
-        uri = namespace[1]
-        attr_name = prefix ? "xmlns:#{prefix}" : "xmlns"
-        node.attributes[attr_name] = uri
-      end
+        def xpath(node, expression, namespaces = {})
+          # Ox doesn't support XPath, implement basic path matching
+          results = []
+          traverse(node) do |n|
+            results << n if matches_xpath?(n, expression, namespaces)
+          end
+          results
+        end
 
-      def self.inner_html(node)
-        return "" unless node.respond_to?(:nodes)
-        node.nodes.map { |child| serialize(child) }.join
-      end
+        def at_xpath(node, expression, namespaces = {})
+          traverse(node) do |n|
+            return n if matches_xpath?(n, expression, namespaces)
+          end
+          nil
+        end
 
-      def self.replace_children(node, children)
-        return unless node.respond_to?(:nodes=)
-        node.nodes = children
-      end
+        def serialize(node, options = {})
+          ::Ox.dump(node,
+                    indent: options[:indent] || -1,
+                    with_xml: true,
+                    with_instructions: true,
+                    encoding: options[:encoding])
+        end
 
-      private
+        private
 
-      def self.traverse(node, &block)
-        return unless node
-        yield node
-        return unless node.respond_to?(:nodes)
-        node.nodes&.each { |child| traverse(child, &block) }
-      end
+        def traverse(node, &block)
+          return unless node
+          yield node
+          return unless node.respond_to?(:nodes)
+          node.nodes&.each { |child| traverse(child, &block) }
+        end
 
-      def self.matches_xpath?(node, expression, namespaces)
-        # Simple implementation - enhance as needed
-        case expression
-        when "//child"
-          node.is_a?(::Ox::Element) && node.name == "child"
-        when /\/\/(\w+)\[@(\w+)='([^']+)'\]/
-          element, attr, value = $1, $2, $3
-          node.is_a?(::Ox::Element) &&
-            node.name == element &&
-            node.attributes&.[](attr) == value
-        else
-          false
+        def matches_xpath?(node, expression, namespaces)
+          # Basic XPath matching - enhance as needed
+          case expression
+          when %r{//(\w+)}
+            node.is_a?(::Ox::Element) && node.name == $1
+          when %r{//(\w+)\[@(\w+)='([^']+)'\]}
+            node.is_a?(::Ox::Element) &&
+              node.name == $1 &&
+              node.attributes&.[]($2) == $3
+          else
+            false
+          end
         end
       end
     end

@@ -1,4 +1,3 @@
-# lib/moxml/context.rb
 module Moxml
   class Context
     attr_reader :config
@@ -7,12 +6,12 @@ module Moxml
       @config = Config.new(adapter)
     end
 
-    def parse(xml, options = {})
-      Document.new(config.adapter.parse(xml, default_options.merge(options)), self)
-    end
-
     def create_document
       Document.new(config.adapter.create_document, self)
+    end
+
+    def parse(xml, options = {})
+      config.adapter.parse(xml, default_options.merge(options))
     end
 
     private

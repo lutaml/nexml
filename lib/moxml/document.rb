@@ -1,8 +1,17 @@
-# lib/moxml/document.rb
+require_relative "node"
+require_relative "element"
+require_relative "text"
+require_relative "cdata"
+require_relative "comment"
+require_relative "processing_instruction"
+require_relative "declaration"
+require_relative "namespace"
+
 module Moxml
   class Document < Node
     def root
-      Element.wrap(adapter.root(@native), context)
+      root_element = adapter.root(@native)
+      root_element ? Element.wrap(root_element, context) : nil
     end
 
     def create_element(name)
@@ -35,16 +44,43 @@ module Moxml
 
     def add_child(node)
       node = prepare_node(node)
+
       if node.is_a?(Declaration)
         if children.empty?
           adapter.add_child(@native, node.native)
         else
           adapter.add_previous_sibling(children.first.native, node.native)
         end
+      elsif root && !node.is_a?(ProcessingInstruction) && !node.is_a?(Comment)
+        raise Error, "Document already has a root element"
       else
         adapter.add_child(@native, node.native)
       end
       self
+    end
+
+    def xpath(expression, namespaces = {})
+      native_nodes = adapter.xpath(@native, expression, namespaces)
+      native_nodes.map { |native_node| find_moxml_node(native_node) }
+    end
+
+    def at_xpath(expression, namespaces = {})
+      if native_node = adapter.at_xpath(@native, expression, namespaces)
+        find_moxml_node(native_node)
+      end
+    end
+
+    private
+
+    def find_moxml_node(native_node)
+      @node_registry ||= {}
+      @node_registry[native_node.object_id] || create_moxml_node(native_node)
+    end
+
+    def create_moxml_node(native_node)
+      node = Node.wrap(native_node, context)
+      @node_registry[native_node.object_id] = node
+      node
     end
   end
 end

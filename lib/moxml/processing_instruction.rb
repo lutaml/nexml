@@ -1,4 +1,3 @@
-# lib/moxml/processing_instruction.rb
 module Moxml
   class ProcessingInstruction < Node
     def target

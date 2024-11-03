@@ -1,12 +1,10 @@
-# lib/moxml/attribute.rb
 module Moxml
   class Attribute < Node
     def name
-      @name ||= adapter.attribute_name(@native)
+      adapter.attribute_name(@native)
     end
 
     def name=(new_name)
-      @name = new_name
       adapter.set_attribute_name(@native, new_name)
     end
 
@@ -15,7 +13,7 @@ module Moxml
     end
 
     def value=(new_value)
-      adapter.set_attribute_value(@native, new_value)
+      adapter.set_attribute_value(@native, normalize_xml_value(new_value))
     end
 
     def namespace

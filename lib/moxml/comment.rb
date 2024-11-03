@@ -1,4 +1,3 @@
-# lib/moxml/comment.rb
 module Moxml
   class Comment < Node
     def content
@@ -6,7 +5,7 @@ module Moxml
     end
 
     def content=(text)
-      adapter.set_comment_content(@native, text)
+      adapter.set_comment_content(@native, normalize_xml_value(text))
       self
     end
 
