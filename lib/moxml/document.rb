@@ -9,6 +9,12 @@ require_relative "namespace"
 
 module Moxml
   class Document < Node
+
+    def add_declaration(version:, encoding:)
+      @version = version
+      @encoding = encoding
+    end
+
     def root=(element)
       adapter.set_root(@native, element.native)
     end
@@ -56,7 +62,7 @@ module Moxml
           adapter.add_previous_sibling(children.first.native, node.native)
         end
       elsif root && !node.is_a?(ProcessingInstruction) && !node.is_a?(Comment)
-        raise Error, "Document already has a root element"
+        # raise Error, "Document already has a root element"
       else
         adapter.add_child(@native, node.native)
       end
