@@ -25,8 +25,8 @@ module Moxml
     end
 
     def attributes
-      adapter.attributes(@native).map do |name, value|
-        Attribute.new(name, value, context)
+      adapter.attributes(@native).map do |attr|
+        Attribute.new(attr, context)
       end
     end
 
@@ -40,6 +40,8 @@ module Moxml
       ns = adapter.create_namespace(@native, prefix, uri)
       adapter.set_namespace(@native, ns) if ns
       self
+    rescue ValidationError => err
+      raise Moxml::NamespaceError, err.message
     end
 
     def namespace

@@ -1,4 +1,5 @@
 require_relative "base"
+require "oga"
 
 module Moxml
   module Adapter
@@ -158,6 +159,11 @@ module Moxml
           node.replace(new_node)
         end
 
+        def replace_children(node, new_children)
+          node.inner_text = ""
+          new_children.each { |child| add_child(node, child) }
+        end
+
         def text_content(node)
           node.text
         end
@@ -200,7 +206,7 @@ module Moxml
 
         def namespace_definitions(node)
           return [] unless node.respond_to?(:namespaces)
-          node.namespaces.map { |ns| [ns.name, ns.uri] }
+          node.namespaces
         end
 
         def xpath(node, expression, namespaces = {})
