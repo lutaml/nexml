@@ -9,7 +9,7 @@ module Moxml
     end
 
     def build(native_doc)
-      @current_doc = Document.new(native_doc, context)
+      @current_doc = context.create_document
       visit_node(native_doc)
       @current_doc
     end

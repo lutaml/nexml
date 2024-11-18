@@ -2,7 +2,7 @@
 module Moxml
   class Config
     VALID_ADAPTERS = [:nokogiri, :oga, :ox].freeze
-    DEFAULT_ADAPTER = :nokogiri
+    DEFAULT_ADAPTER = VALID_ADAPTERS.first
 
     class << self
       def default
@@ -13,6 +13,7 @@ module Moxml
     attr_reader :adapter_name
     attr_accessor :strict_parsing,
                   :default_encoding,
+                  :entity_encoding,
                   :default_indent
 
     def initialize(adapter_name = DEFAULT_ADAPTER)
@@ -20,12 +21,14 @@ module Moxml
       @strict_parsing = true
       @default_encoding = "UTF-8"
       @default_indent = 2
+      @entity_encoding = :basic
     end
 
     def adapter=(name)
       name = name.to_sym
+      @adapter = nil
+
       unless VALID_ADAPTERS.include?(name)
-        @adapter = nil
         raise ArgumentError, "Invalid adapter: #{name}. Valid adapters are: #{VALID_ADAPTERS.join(", ")}"
       end
 

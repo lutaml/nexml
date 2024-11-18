@@ -7,7 +7,7 @@ RSpec.describe Moxml::Namespace do
   describe "creation" do
     it "creates namespace with prefix" do
       element.add_namespace("xs", "http://www.w3.org/2001/XMLSchema")
-      ns = element.namespaces.first
+      ns = element.namespace
 
       expect(ns).to be_namespace
       expect(ns.prefix).to eq("xs")
@@ -16,7 +16,7 @@ RSpec.describe Moxml::Namespace do
 
     it "creates default namespace" do
       element.add_namespace(nil, "http://example.org")
-      ns = element.namespaces.first
+      ns = element.namespace
 
       expect(ns.prefix).to be_nil
       expect(ns.uri).to eq("http://example.org")
@@ -25,26 +25,26 @@ RSpec.describe Moxml::Namespace do
     it "validates URI" do
       expect {
         element.add_namespace("xs", "invalid uri")
-      }.to raise_error(Moxml::NamespaceError)
+      }.to raise_error(Moxml::NamespaceError, "Invalid URI: invalid uri")
     end
   end
 
   describe "string representation" do
     it "formats prefixed namespace" do
       element.add_namespace("xs", "http://www.w3.org/2001/XMLSchema")
-      expect(element.namespaces.first.to_s).to eq('xmlns:xs="http://www.w3.org/2001/XMLSchema"')
+      expect(element.namespace.to_s).to eq('xmlns:xs="http://www.w3.org/2001/XMLSchema"')
     end
 
     it "formats default namespace" do
       element.add_namespace(nil, "http://example.org")
-      expect(element.namespaces.first.to_s).to eq('xmlns="http://example.org"')
+      expect(element.namespace.to_s).to eq('xmlns="http://example.org"')
     end
   end
 
   describe "equality" do
-    let(:ns1) { element.add_namespace("xs", "http://www.w3.org/2001/XMLSchema").namespaces.first }
-    let(:ns2) { element.add_namespace("xs", "http://www.w3.org/2001/XMLSchema").namespaces.first }
-    let(:ns3) { element.add_namespace("xsi", "http://www.w3.org/2001/XMLSchema-instance").namespaces.first }
+    let(:ns1) { element.add_namespace("xs", "http://www.w3.org/2001/XMLSchema").namespace }
+    let(:ns2) { element.add_namespace("xs", "http://www.w3.org/2001/XMLSchema").namespace }
+    let(:ns3) { element.add_namespace("xsi", "http://www.w3.org/2001/XMLSchema-instance").namespace }
 
     it "compares namespaces" do
       expect(ns1).to eq(ns2)
@@ -53,7 +53,7 @@ RSpec.describe Moxml::Namespace do
 
     it "compares with different elements" do
       other_element = doc.create_element("other")
-      other_ns = other_element.add_namespace("xs", "http://www.w3.org/2001/XMLSchema").namespaces.first
+      other_ns = other_element.add_namespace("xs", "http://www.w3.org/2001/XMLSchema").namespace
       expect(ns1).to eq(other_ns)
     end
   end

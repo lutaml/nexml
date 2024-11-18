@@ -48,20 +48,20 @@ RSpec.describe Moxml::Element do
     it "adds namespace" do
       element.add_namespace("x", "http://example.org")
       expect(element.namespaces.size).to eq(1)
-      expect(element.namespaces.first.prefix).to eq("x")
-      expect(element.namespaces.first.uri).to eq("http://example.org")
+      expect(element.namespace.prefix).to eq("x")
+      expect(element.namespace.uri).to eq("http://example.org")
     end
 
     it "sets namespace" do
-      ns = element.add_namespace("x", "http://example.org").namespaces.first
+      ns = element.add_namespace("x", "http://example.org").namespace
       element.namespace = ns
       expect(element.namespace).to eq(ns)
     end
 
     it "adds default namespace" do
       element.add_namespace(nil, "http://example.org")
-      expect(element.namespaces.first.prefix).to be_nil
-      expect(element.namespaces.first.uri).to eq("http://example.org")
+      expect(element.namespace.prefix).to be_nil
+      expect(element.namespace.uri).to eq("http://example.org")
     end
   end
 
@@ -101,7 +101,7 @@ RSpec.describe Moxml::Element do
       element.add_child("text")
       element.add_child(doc.create_element("child"))
       element.add_child("more")
-      expect(element.to_xml).to include("text<child/>more")
+      expect(element.to_xml).to include("text<child></child>more")
     end
   end
 end

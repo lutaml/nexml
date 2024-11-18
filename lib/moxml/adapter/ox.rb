@@ -1,10 +1,12 @@
 require_relative "base"
+require "ox"
 
 module Moxml
   module Adapter
     class Ox < Base
       class << self
         def set_root(doc, element)
+          # replace_children(doc, [element])
           doc.nodes = [element]  # Replace all nodes with just the root element
         end
 
@@ -196,6 +198,11 @@ module Moxml
           return unless node.parent
           idx = node.parent.nodes.index(node)
           node.parent.nodes[idx] = new_node if idx
+        end
+
+        def replace_children(node, new_children)
+          node.remove_children_by_path("*")
+          new_children.each { |child| node << child }
         end
 
         def text_content(node)

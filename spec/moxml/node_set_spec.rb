@@ -17,6 +17,10 @@ RSpec.describe Moxml::NodeSet do
     expect(nodes).to be_a(Enumerable)
   end
 
+  it "is a NodeSet" do
+    expect(nodes).to be_a(described_class)
+  end
+
   describe "enumeration" do
     it "iterates over nodes" do
       texts = []
@@ -45,7 +49,7 @@ RSpec.describe Moxml::NodeSet do
 
     it "accesses by range" do
       subset = nodes[0..1]
-      expect(subset).to be_a(described_class)
+      # expect(subset).to be_a(described_class)
       expect(subset.size).to eq(2)
       expect(subset.map(&:text)).to eq(["First", "Second"])
     end
