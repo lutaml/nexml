@@ -26,8 +26,12 @@ module Moxml
       adapter.set_namespace(@native, ns&.native)
     end
 
+    def element
+      adapter.attribute_element(@native)
+    end
+
     def remove
-      @native.remove_attribute(name)
+      adapter.remove_attribute(element, name)
       self
     end
 

@@ -6,7 +6,7 @@ module Moxml
 
     class << self
       def default
-        @default ||= new
+        @default ||= new(DEFAULT_ADAPTER, true, "UTF-8")
       end
     end
 
@@ -16,10 +16,11 @@ module Moxml
                   :entity_encoding,
                   :default_indent
 
-    def initialize(adapter_name = DEFAULT_ADAPTER)
-      self.adapter = adapter_name
-      @strict_parsing = true
-      @default_encoding = "UTF-8"
+    def initialize(adapter_name = nil, strict_parsing = nil, default_encoding = nil)
+      self.adapter = adapter_name || Config.default.adapter_name
+      @strict_parsing = strict_parsing || Config.default.strict_parsing
+      @default_encoding = default_encoding || Config.default.default_encoding
+      # reserved for future use
       @default_indent = 2
       @entity_encoding = :basic
     end
