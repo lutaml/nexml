@@ -126,6 +126,10 @@ module Moxml
           document.root
         end
 
+        def attribute_element(attr)
+          attr.parent
+        end
+
         def attributes(element)
           element.attributes.values
         end
@@ -135,7 +139,7 @@ module Moxml
         end
 
         def get_attribute(element, name)
-          element[name.to_s]
+          element.attributes[name.to_s]
         end
 
         def remove_attribute(element, name)
@@ -222,7 +226,7 @@ module Moxml
           save_options = ::Nokogiri::XML::Node::SaveOptions::AS_XML
 
           # Don't force expand empty elements if they're really empty
-          save_options |= ::Nokogiri::XML::Node::SaveOptions::NO_EMPTY_TAGS unless options[:expand_empty]
+          save_options |= ::Nokogiri::XML::Node::SaveOptions::NO_EMPTY_TAGS if options[:expand_empty]
           save_options |= ::Nokogiri::XML::Node::SaveOptions::FORMAT if options[:indent].to_i > 0
 
           node.to_xml(

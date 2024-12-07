@@ -16,12 +16,12 @@ module Moxml
     end
 
     def [](name)
-      adapter.get_attribute(@native, name)
+      adapter.get_attribute(@native, name)&.value
     end
 
     def attribute(name)
-      value = adapter.get_attribute(@native, name)
-      value && Attribute.new(name, value, context)
+      native_attr = adapter.get_attribute(@native, name)
+      native_attr && Attribute.new(native_attr, context)
     end
 
     def attributes
