@@ -60,9 +60,13 @@ module Moxml
       @node_stack.last.add_child(ProcessingInstruction.new(node, context)) if @node_stack.any?
     end
 
+    def visit_doctype(node)
+      @node_stack.last.add_child(Doctype.new(node, context)) if @node_stack.any?
+    end
+
     def visit_children(node)
       node_children = children(node).dup
-      node_children.each_with_index do |child, index|
+      node_children.each do |child|
         visit_node(child)
       end
     end

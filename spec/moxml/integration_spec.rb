@@ -43,9 +43,6 @@ RSpec.describe "Moxml Integration" do
         '<item id="123" xs:type="custom"/>',
         "</root>"
       ]
-      puts doc.to_xml
-      puts '*' * 30
-      puts expected_aml
       expect(doc.to_xml).to include(expected_xml)
 
       # Test XPath queries

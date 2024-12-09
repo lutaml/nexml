@@ -1,5 +1,4 @@
-# spec/moxml/comment_spec.rb
-RSpec.describe Moxml::Comment do
+RSpec.shared_examples 'Moxml::Comment' do
   let(:context) { Moxml.new }
   let(:doc) { context.create_document }
   let(:comment) { doc.create_comment("test comment") }
@@ -26,7 +25,7 @@ RSpec.describe Moxml::Comment do
 
   describe "serialization" do
     it "wraps content in comment markers" do
-      expect(comment.to_xml(pretty: false)).to eq("<!--test comment-->")
+      expect(comment.to_xml).to eq("<!--test comment-->")
     end
 
     it "raises an error on double hyphens" do
@@ -36,7 +35,7 @@ RSpec.describe Moxml::Comment do
 
     it "handles special characters" do
       comment.content = "< > & \" '"
-      expect(comment.to_xml(pretty: false)).to eq("<!--< > & \" '-->")
+      expect(comment.to_xml).to eq("<!--< > & \" '-->")
     end
   end
 

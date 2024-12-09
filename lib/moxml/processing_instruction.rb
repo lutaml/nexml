@@ -14,7 +14,7 @@ module Moxml
     end
 
     def content=(new_content)
-      adapter.set_processing_instruction_content(@native, new_content)
+      adapter.set_processing_instruction_content(@native, new_content.to_s)
       self
     end
 
