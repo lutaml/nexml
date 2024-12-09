@@ -6,6 +6,7 @@ require_relative "comment"
 require_relative "processing_instruction"
 require_relative "declaration"
 require_relative "namespace"
+require_relative "doctype"
 
 module Moxml
   class Document < Node
@@ -32,6 +33,13 @@ module Moxml
 
     def create_comment(content)
       Comment.new(adapter.create_comment(content), context)
+    end
+
+    def create_doctype(name, external_id, system_id)
+      Doctype.new(
+        adapter.create_doctype(name, external_id, system_id),
+        context
+      )
     end
 
     def create_processing_instruction(target, content)

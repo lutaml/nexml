@@ -62,12 +62,7 @@ module Moxml
     end
 
     def to_xml(options = {})
-      encode_mode = options.delete(:encode_mode)
-
-      encode_entities(
-        adapter.serialize(@native, default_options.merge(options)),
-        encode_mode
-      )
+      adapter.serialize(@native, default_options.merge(options))
     end
 
     def xpath(expression, namespaces = {})
@@ -93,6 +88,7 @@ module Moxml
         when :processing_instruction then ProcessingInstruction
         when :document then Document
         when :declaration then Declaration
+        when :doctype then Doctype
         else self
         end
 

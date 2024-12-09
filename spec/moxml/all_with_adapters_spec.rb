@@ -5,6 +5,14 @@ RSpec.describe "Test all shared examples" do
     'Moxml::Attribute',
     'Moxml::NodeSet',
     'Moxml::Element',
+    'Moxml::Cdata',
+    'Moxml::Comment',
+    'Moxml::Text',
+    'Moxml::ProcessingInstruction',
+    'Moxml::Declaration',
+    'Moxml::Doctype',
+    'Moxml::Document',
+    'Moxml::Builder',
   ]
 
   Moxml::Adapter::AVALIABLE_ADAPTERS.each do |adapter_name|

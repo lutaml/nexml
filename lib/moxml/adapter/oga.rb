@@ -1,5 +1,6 @@
 require_relative "base"
 require_relative "customized_oga/xml_generator"
+require_relative "customized_oga/xml_declaration"
 require "oga"
 
 module Moxml
@@ -14,7 +15,7 @@ module Moxml
         def parse(xml, options = {})
           native_doc = begin
               ::Oga.parse_xml(xml, strict: options[:strict])
-            rescue ::Oga::XML::SyntaxError => e
+            rescue LL::ParserError => e
               raise Moxml::ParseError.new(e.message)
             end
 
@@ -41,15 +42,35 @@ module Moxml
           ::Oga::XML::Comment.new(text: content)
         end
 
+        def create_native_doctype(name, external_id, system_id)
+          ::Oga::XML::Doctype.new(
+            name: name, public_id: external_id, system_id: system_id, type: 'PUBLIC'
+          )
+        end
+
         def create_native_processing_instruction(target, content)
           ::Oga::XML::ProcessingInstruction.new(name: target, text: content)
         end
 
         def create_native_declaration(version, encoding, standalone)
-          ::Oga::XML::ProcessingInstruction.new(
-            name: "xml",
-            text: build_declaration_attrs(version, encoding, standalone),
-          )
+          attrs = {
+            version: version,
+            encoding: encoding,
+            standalone: standalone
+          }.compact
+          ::Moxml::Adapter::CustomizedOga::XmlDeclaration.new(attrs)
+        end
+
+        def declaration_attribute(declaration, attr_name)
+          return unless ::Moxml::Declaration::ALLOWED_ATTRIBUTES.include?(attr_name.to_s)
+
+          declaration.public_send(attr_name)
+        end
+
+        def set_declaration_attribute(declaration, attr_name, value)
+          return unless ::Moxml::Declaration::ALLOWED_ATTRIBUTES.include?(attr_name.to_s)
+
+          declaration.public_send("#{attr_name}=", value)
         end
 
         def create_native_namespace(element, prefix, uri)
@@ -88,6 +109,7 @@ module Moxml
           when ::Oga::XML::Comment then :comment
           when ::Oga::XML::ProcessingInstruction then :processing_instruction
           when ::Oga::XML::Document then :document
+          when ::Oga::XML::Doctype then :doctype
           else :unknown
           end
         end
@@ -101,8 +123,15 @@ module Moxml
         end
 
         def children(node)
-          return [] unless node.respond_to?(:children)
-          node.children.reject do |child|
+          all_children = []
+          
+          if node.is_a?(::Oga::XML::Document)
+            all_children += [node.xml_declaration, node.doctype].compact
+          end
+
+          return all_children unless node.respond_to?(:children)
+
+          all_children += node.children.reject do |child|
             child.is_a?(::Oga::XML::Text) &&
               child.text.strip.empty? &&
               !(child.previous.nil? && child.next.nil?)
@@ -195,7 +224,12 @@ module Moxml
         end
 
         def set_text_content(node, content)
-          node.inner_text = content
+          if node.respond_to?(:inner_text)
+            node.inner_text = content
+          else
+            # Oga::XML::Text node for example
+            node.text = content
+          end
         end
 
         def cdata_content(node)
@@ -247,14 +281,9 @@ module Moxml
           raise Moxml::XPathError, e.message
         end
 
-        def serialize(node, options = {})
-          if options[:expand_empty]
-            # Expand empty tags with a custom generator
-            ::Moxml::Adapter::CustomizedOga::XmlGenerator.new(node).to_xml
-          else
-            # Use the native generator
-            node.to_xml
-          end
+        def serialize(node, _options = {})
+          # Expand empty tags, encode attributes, etc
+          ::Moxml::Adapter::CustomizedOga::XmlGenerator.new(node).to_xml
         end
       end
     end

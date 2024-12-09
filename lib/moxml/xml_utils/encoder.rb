@@ -6,20 +6,20 @@ module Moxml
       MAPPINGS = {
         none: {},
         basic: {
-          "&" => "&amp;",
           "<" => "&lt;",
-          ">" => "&gt;"
+          ">" => "&gt;",
+          "&" => "&amp;",
         },
-        extended: {
+        quotes: {
           "'"  => "&apos;",
-          '"'  => "&quot;"
+          '"'  => "&quot;",
         },
         full: {
-          "&" => "&amp;",
           "<" => "&lt;",
           ">" => "&gt;",
           "'"  => "&apos;",
-          '"'  => "&quot;"
+          '"'  => "&quot;",
+          "&" => "&amp;",
         },
       }.freeze
       MODES = MAPPINGS.keys.freeze
