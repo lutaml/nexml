@@ -16,7 +16,7 @@ module Moxml
     end
 
     def [](name)
-      adapter.get_attribute(@native, name)&.value
+      adapter.get_attribute_value(@native, name)
     end
 
     def attribute(name)
@@ -37,27 +37,37 @@ module Moxml
 
     def add_namespace(prefix, uri)
       validate_uri(uri)
-      ns = adapter.create_namespace(@native, prefix, uri)
-      adapter.set_namespace(@native, ns) if ns
+      adapter.create_native_namespace(@native, prefix, uri)
       self
     rescue ValidationError => err
       raise Moxml::NamespaceError, err.message
     end
+    alias :add_namespace_definition :add_namespace
 
+    # it's NOT the same as namespaces.first
     def namespace
       ns = adapter.namespace(@native)
       ns && Namespace.new(ns, context)
     end
 
-    def namespaces
-      adapter.namespace_definitions(@native).map do |prefix, uri|
-        Namespace.new([prefix, uri], context)
+    # it does NOT change the list of namespace definitions
+    def namespace=(ns_or_hash)
+      if ns_or_hash.is_a?(Hash)
+        adapter.set_namespace(
+          @native,
+          adapter.create_namespace(@native, *ns_or_hash.to_a.first)
+        )
+      else
+        adapter.set_namespace(@native, ns_or_hash&.native)
       end
     end
 
-    def namespace=(ns)
-      adapter.set_namespace(@native, ns&.native)
+    def namespaces
+      adapter.namespace_definitions(@native).map do |ns|
+        Namespace.new(ns, context)
+      end
     end
+    alias :namespace_definitions :namespaces
 
     def text
       adapter.text_content(@native)

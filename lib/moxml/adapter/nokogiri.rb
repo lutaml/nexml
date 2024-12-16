@@ -11,9 +11,16 @@ module Moxml
 
         def parse(xml, options = {})
           native_doc = begin
-              ::Nokogiri::XML(xml, nil, options[:encoding]) do |config|
-                config.strict.nonet
-                config.recover unless options[:strict]
+              if options[:fragment]
+                ::Nokogiri::XML::DocumentFragment.parse(xml) do |config|
+                  config.strict.nonet
+                  config.recover unless options[:strict]
+                end
+              else
+                ::Nokogiri::XML(xml, nil, options[:encoding]) do |config|
+                  config.strict.nonet
+                  config.recover unless options[:strict]
+                end
               end
             rescue ::Nokogiri::XML::SyntaxError => e
               raise Moxml::ParseError.new(e.message, line: e.line, column: e.column)
@@ -25,40 +32,46 @@ module Moxml
         def create_document
           ::Nokogiri::XML::Document.new
         end
+        
+        def create_fragment
+          # document fragments are weird and should be used with caution:
+          # https://github.com/sparklemotion/nokogiri/issues/572
+          ::Nokogiri::XML::DocumentFragment.new(
+            ::Nokogiri::XML::Document.new
+          )
+        end
 
         def create_native_element(name)
-          ::Nokogiri::XML::Element.new(name, ::Nokogiri::XML::Document.new)
+          ::Nokogiri::XML::Element.new(name, create_document)
         end
 
         def create_native_text(content)
-          ::Nokogiri::XML::Text.new(content, ::Nokogiri::XML::Document.new)
+          ::Nokogiri::XML::Text.new(content, create_document)
         end
 
         def create_native_cdata(content)
-          ::Nokogiri::XML::CDATA.new(::Nokogiri::XML::Document.new, content)
+          ::Nokogiri::XML::CDATA.new(create_document, content)
         end
 
         def create_native_comment(content)
-          ::Nokogiri::XML::Comment.new(::Nokogiri::XML::Document.new, content)
+          ::Nokogiri::XML::Comment.new(create_document, content)
         end
 
         def create_native_doctype(name, external_id, system_id)
-          ::Nokogiri::XML::Document.new.create_internal_subset(
+          create_document.create_internal_subset(
             name, external_id, system_id
           )
         end
 
         def create_native_processing_instruction(target, content)
           ::Nokogiri::XML::ProcessingInstruction.new(
-            ::Nokogiri::XML::Document.new,
-            target,
-            content
+            ::Nokogiri::XML::Document.new, target, content
           )
         end
 
         def create_native_declaration(version, encoding, standalone)
           ::Nokogiri::XML::ProcessingInstruction.new(
-            ::Nokogiri::XML::Document.new,
+            create_document,
             "xml",
             build_declaration_attrs(version, encoding, standalone)
           )
@@ -96,17 +109,17 @@ module Moxml
         end
 
         def create_native_namespace(element, prefix, uri)
-          element.add_namespace(prefix, uri)
+          element.add_namespace_definition(prefix, uri)
         end
 
         def node_type(node)
           case node
           when ::Nokogiri::XML::Element then :element
-          when ::Nokogiri::XML::Text then :text
           when ::Nokogiri::XML::CDATA then :cdata
+          when ::Nokogiri::XML::Text then :text
           when ::Nokogiri::XML::Comment then :comment
           when ::Nokogiri::XML::ProcessingInstruction then :processing_instruction
-          when ::Nokogiri::XML::Document then :document
+          when ::Nokogiri::XML::Document, ::Nokogiri::XML::DocumentFragment then :document
           when ::Nokogiri::XML::DTD then :doctype
           else :unknown
           end
@@ -149,7 +162,7 @@ module Moxml
         end
 
         def root(document)
-          document.root
+          document.respond_to?(:root) ? document.root : document.children.first
         end
 
         def attribute_element(attr)
@@ -165,7 +178,13 @@ module Moxml
         end
 
         def get_attribute(element, name)
+          # attributes keys don't include attribute namespaces
           element.attributes[name.to_s]
+        end
+
+        def get_attribute_value(element, name)
+          # get the attribute value by its name including a namespace
+          element[name.to_s]
         end
 
         def remove_attribute(element, name)
@@ -243,13 +262,13 @@ module Moxml
           node.namespace_definitions
         end
 
-        def xpath(node, expression, namespaces = {})
+        def xpath(node, expression, namespaces = nil)
           node.xpath(expression, namespaces).to_a
         rescue ::Nokogiri::XML::XPath::SyntaxError => e
           raise Moxml::XPathError, e.message
         end
 
-        def at_xpath(node, expression, namespaces = {})
+        def at_xpath(node, expression, namespaces = nil)
           node.at_xpath(expression, namespaces)
         rescue ::Nokogiri::XML::XPath::SyntaxError => e
           raise Moxml::XPathError, e.message
@@ -261,6 +280,7 @@ module Moxml
           # Don't force expand empty elements if they're really empty
           save_options |= ::Nokogiri::XML::Node::SaveOptions::NO_EMPTY_TAGS if options[:expand_empty]
           save_options |= ::Nokogiri::XML::Node::SaveOptions::FORMAT if options[:indent].to_i > 0
+          save_options |= ::Nokogiri::XML::Node::SaveOptions::NO_DECLARATION if options[:no_declaration]
 
           node.to_xml(
             indent: options[:indent],

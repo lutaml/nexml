@@ -71,12 +71,12 @@ module Moxml
       self
     end
 
-    def xpath(expression, namespaces = {})
+    def xpath(expression, namespaces = nil)
       native_nodes = adapter.xpath(@native, expression, namespaces)
       NodeSet.new(native_nodes, context)
     end
 
-    def at_xpath(expression, namespaces = {})
+    def at_xpath(expression, namespaces = nil)
       if native_node = adapter.at_xpath(@native, expression, namespaces)
         Node.wrap(native_node, context)
       end

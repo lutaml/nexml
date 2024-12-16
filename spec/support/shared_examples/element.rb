@@ -48,8 +48,8 @@ RSpec.shared_examples 'Moxml::Element' do
       it "adds namespace" do
         element.add_namespace("x", "http://example.org")
         expect(element.namespaces.size).to eq(1)
-        expect(element.namespace.prefix).to eq("x")
-        expect(element.namespace.uri).to eq("http://example.org")
+        expect(element.namespaces.first.prefix).to eq("x")
+        expect(element.namespaces.first.uri).to eq("http://example.org")
       end
 
       it "sets namespace" do

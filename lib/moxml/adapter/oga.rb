@@ -81,10 +81,8 @@ module Moxml
           ::Oga::XML::Namespace.new(name: prefix, uri: uri)
         end
 
-        def set_namespace(element, ns)
-          return if element.available_namespaces.include?(ns.name)
-
-          element.register_namespace(ns.name, ns.uri)
+        def set_namespace(element, ns_or_string)
+          element.namespace_name = ns_or_string.to_s
         end
 
         def namespace(element)
@@ -189,12 +187,23 @@ module Moxml
           element.attribute(name.to_s)
         end
 
+        def get_attribute_value(element, name)
+          element[name.to_s]
+        end
+
         def remove_attribute(element, name)
           attr = element.attribute(name.to_s)
           element.attributes.delete(attr) if attr
         end
 
-        def add_child(element, child)
+        def add_child(element, child_or_text)
+          child =
+            if child_or_text.is_a?(String)
+              create_native_text(child_or_text)
+            else
+              child_or_text
+            end
+
           element.children << child
         end
 
@@ -266,12 +275,12 @@ module Moxml
 
         def namespace_definitions(node)
           return [] unless node.respond_to?(:namespaces)
-          node.namespaces
+          node.namespaces.values
         end
 
         def xpath(node, expression, namespaces = {})
           node.xpath(expression).to_a
-        rescue ::Oga::XPath::Error => e
+        rescue ::LL::ParserError => e
           raise Moxml::XPathError, e.message
         end
 

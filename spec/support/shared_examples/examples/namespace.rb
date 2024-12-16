@@ -1,4 +1,4 @@
-RSpec.describe "Namespace Examples" do
+RSpec.shared_examples "Namespace Examples" do
   let(:context) { Moxml.new }
 
   describe "Namespace handling" do
@@ -40,7 +40,7 @@ RSpec.describe "Namespace Examples" do
 
       expect(doc.to_xml).to include(
         "<ns:child>",
-        "<ns:grandchild/>"
+        "<ns:grandchild>"
       )
     end
 

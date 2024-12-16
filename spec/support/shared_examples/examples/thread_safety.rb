@@ -1,4 +1,4 @@
-RSpec.describe "Thread Safety Examples" do
+RSpec.shared_examples "Thread Safety Examples" do
   describe "Thread-safe processing" do
     let(:processor_class) do
       Class.new do

@@ -7,7 +7,7 @@ RSpec.shared_examples 'Moxml::Namespace' do
     describe "creation" do
       it "creates namespace with prefix" do
         element.add_namespace("xs", "http://www.w3.org/2001/XMLSchema")
-        ns = element.namespace
+        ns = element.namespaces.first
 
         expect(ns).to be_namespace
         expect(ns.prefix).to eq("xs")
@@ -16,7 +16,7 @@ RSpec.shared_examples 'Moxml::Namespace' do
 
       it "creates default namespace" do
         element.add_namespace(nil, "http://example.org")
-        ns = element.namespace
+        ns = element.namespaces.first
 
         expect(ns.prefix).to be_nil
         expect(ns.uri).to eq("http://example.org")
@@ -32,19 +32,19 @@ RSpec.shared_examples 'Moxml::Namespace' do
     describe "string representation" do
       it "formats prefixed namespace" do
         element.add_namespace("xs", "http://www.w3.org/2001/XMLSchema")
-        expect(element.namespace.to_s).to eq('xmlns:xs="http://www.w3.org/2001/XMLSchema"')
+        expect(element.namespaces.first.to_s).to eq('xmlns:xs="http://www.w3.org/2001/XMLSchema"')
       end
 
       it "formats default namespace" do
         element.add_namespace(nil, "http://example.org")
-        expect(element.namespace.to_s).to eq('xmlns="http://example.org"')
+        expect(element.namespaces.first.to_s).to eq('xmlns="http://example.org"')
       end
     end
 
     describe "equality" do
-      let(:ns1) { element.add_namespace("xs", "http://www.w3.org/2001/XMLSchema").namespace }
-      let(:ns2) { element.add_namespace("xs", "http://www.w3.org/2001/XMLSchema").namespace }
-      let(:ns3) { element.add_namespace("xsi", "http://www.w3.org/2001/XMLSchema-instance").namespace }
+      let(:ns1) { element.add_namespace("xs", "http://www.w3.org/2001/XMLSchema").namespaces.last }
+      let(:ns2) { element.add_namespace("xs", "http://www.w3.org/2001/XMLSchema").namespaces.last }
+      let(:ns3) { element.add_namespace("xsi", "http://www.w3.org/2001/XMLSchema-instance").namespaces.last }
 
       it "compares namespaces" do
         expect(ns1).to eq(ns2)
@@ -53,27 +53,37 @@ RSpec.shared_examples 'Moxml::Namespace' do
 
       it "compares with different elements" do
         other_element = doc.create_element("other")
-        other_ns = other_element.add_namespace("xs", "http://www.w3.org/2001/XMLSchema").namespace
+        other_ns = other_element.add_namespace("xs", "http://www.w3.org/2001/XMLSchema").namespaces.first
         expect(ns1).to eq(other_ns)
       end
     end
 
     describe "inheritance" do
-      xit "inherits parent namespaces" do
+      it "does not inherit parent namespaces" do
+        # https://stackoverflow.com/a/67347081
         root = doc.create_element("root")
-        root.add_namespace("xs", "http://www.w3.org/2001/XMLSchema")
+        root.namespace = { "xs" => "http://www.w3.org/2001/XMLSchema" }
         child = doc.create_element("child")
         root.add_child(child)
 
-        expect(child.namespace.prefix).to eq("xs")
+        expect(child.namespace).to be_nil
+      end
+
+      it "inherits default parent namespaces" do
+        root = doc.create_element("root")
+        root.namespace = { nil => "http://www.w3.org/2001/XMLSchema" }
+        child = doc.create_element("child")
+        root.add_child(child)
+
+        expect(child.namespace.prefix).to be_nil
         expect(child.namespace.uri).to eq("http://www.w3.org/2001/XMLSchema")
       end
 
       it "overrides parent namespace" do
         root = doc.create_element("root")
-        root.add_namespace("ns", "http://example.org/1")
+        root.namespace = { "ns" => "http://example.org/1" }
         child = doc.create_element("child")
-        child.add_namespace("ns", "http://example.org/2")
+        child.namespace = { "ns" => "http://example.org/2" }
         root.add_child(child)
 
         expect(root.namespace.uri).to eq("http://example.org/1")
