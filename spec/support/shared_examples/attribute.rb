@@ -52,7 +52,7 @@ RSpec.shared_examples 'Moxml::Attribute' do
         expect(attribute.namespace.uri).to eq("http://example.org")
       end
 
-      xit "changes attribute namespace" do
+      it "changes attribute namespace" do
         element["attr"] = "value"
         attribute = element.attributes.first
 

@@ -11,6 +11,38 @@ module Moxml
           false
         end
 
+        def on_element(element, output)
+          name = element.expanded_name
+
+          namespace_definitions = ''
+          element.namespaces.values.each do |ns|
+            namespace_definitions << ' '
+            on_namespace_definition(ns, namespace_definitions)
+          end
+
+          attrs = ''
+          element.attributes.each do |attr|
+            attrs << ' '
+            on_attribute(attr, attrs)
+          end
+
+          closing_tag = 
+            if self_closing?(element)
+              html_void_element?(element) ? '>' : ' />'
+            else
+              ">"
+            end
+
+          output << "<#{name}#{namespace_definitions}#{attrs}#{closing_tag}"
+        end
+
+        def on_namespace_definition(ns, output)
+          name = "xmlns"
+          name += ":#{ns.name}" unless ns.name.nil?
+
+          output << %Q(#{name}="#{ns.uri}")
+        end
+
         def on_attribute(attr, output)
           return super unless attr.value&.include?("'")
 
@@ -21,13 +53,32 @@ module Moxml
           # Escape the end sequence
           return super unless node.text.include?("]]>")
 
-          chunks = node.text.split("]]>")
-          chunks.each_with_index do |chunk, index|
-            text = chunk
-            text = ">#{text}" unless index.zero?
-            text = "#{text}]]" unless index == chunks.length - 1
+          chunks = node.text.split(/(\]\]>)/)
+          if chunks.size == 1
+            chunks = ["]]", ">"]
+          end
 
-            output << "<![CDATA[#{text}]]>"
+          while index = chunks.index("]]>") do
+            # the end tag cannot be the first and the last at the same time
+
+            if index.zero?
+              # it's the first text chunk
+              chunks[index] = "]]"
+              chunks[index + 1] = ">#{chunks[index + 1]}"
+            elsif index - 1 == chunks.size
+              # it's the last text chunk
+              chunks[index - 1] += "]]"
+              chunks[index] = ">"
+            else
+              # it's a chunk in the middle
+              chunks[index - 1] += "]]"
+              chunks[index + 1] = ">#{chunks[index + 1]}"
+              chunks.delete_at(index)
+            end
+          end
+
+          chunks.each do |chunk|
+            output << "<![CDATA[#{chunk}]]>"
           end
 
           output

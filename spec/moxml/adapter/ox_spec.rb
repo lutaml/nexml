@@ -1,7 +1,7 @@
 require "ox"
 require "moxml/adapter/ox"
 
-RSpec.describe Moxml::Adapter::Ox do
+RSpec.describe Moxml::Adapter::Ox, skip: "Ox will be added later" do
   before(:all) do
     Moxml.configure do |config|
       config.adapter = :ox

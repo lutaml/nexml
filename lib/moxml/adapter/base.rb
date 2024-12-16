@@ -22,7 +22,7 @@ module Moxml
         end
 
         def create_element(name)
-          validate_name(name)
+          validate_element_name(name)
           create_native_element(name)
         end
 
@@ -35,6 +35,7 @@ module Moxml
         end
 
         def create_comment(content)
+          validate_comment_content(content)
           create_native_comment(normalize_xml_value(content))
         end
 
@@ -43,7 +44,7 @@ module Moxml
         end
 
         def create_processing_instruction(target, content)
-          validate_name(target)
+          validate_pi_target(target)
           create_native_processing_instruction(target, normalize_xml_value(content))
         end
 
@@ -58,28 +59,6 @@ module Moxml
           validate_prefix(prefix) if prefix
           validate_uri(uri)
           create_native_namespace(element, prefix, uri)
-        end
-
-        def validate_declaration_version(version)
-          unless ::Moxml::Declaration::ALLOWED_VERSIONS.include?(version)
-            raise ValidationError, "Invalid XML version: #{version}"
-          end
-        end
-
-        def validate_declaration_encoding(encoding)
-          return if encoding.nil?
-          begin
-            Encoding.find(encoding)
-          rescue ArgumentError
-            raise ValidationError, "Invalid encoding: #{encoding}"
-          end
-        end
-
-        def validate_declaration_standalone(standalone)
-          return if standalone.nil?
-          unless ::Moxml::Declaration::ALLOWED_STANDALONE.include?(standalone)
-            raise ValidationError, "Invalid standalone value: #{standalone}"
-          end
         end
 
         protected
@@ -114,14 +93,6 @@ module Moxml
 
         def create_native_namespace(element, prefix, uri)
           raise NotImplementedError
-        end
-
-        private
-
-        def validate_prefix(prefix)
-          unless prefix.match?(/\A[a-zA-Z_][\w\-]*\z/)
-            raise ValidationError, "Invalid namespace prefix: #{prefix}"
-          end
         end
       end
     end

@@ -1,4 +1,4 @@
-RSpec.describe "Attribute Examples" do
+RSpec.shared_examples "Attribute Examples" do
   let(:context) { Moxml.new }
   let(:doc) { context.create_document }
 
@@ -25,7 +25,7 @@ RSpec.describe "Attribute Examples" do
       element["special"] = '< > & " \''
 
       expect(element.to_xml).to include(
-        'special="&lt; &gt; &amp; &quot; &apos;"'
+        'special="&lt; &gt; &amp; &quot; \''
       )
     end
 

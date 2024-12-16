@@ -1,4 +1,4 @@
-RSpec.describe "README Examples" do
+RSpec.shared_examples "README Examples" do
   describe "Quick Start example" do
     it "builds document as shown in README" do
       context = Moxml.new
@@ -92,7 +92,7 @@ RSpec.describe "README Examples" do
       end.new
 
       result = processor.process("<root/>")
-      expect(result).to include("<root/>")
+      expect(result).to include("<root></root>")
     end
   end
 end

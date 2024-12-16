@@ -1,4 +1,4 @@
-RSpec.describe "XPath Examples" do
+RSpec.shared_examples "XPath Examples" do
   let(:context) { Moxml.new }
 
   describe "XPath querying" do

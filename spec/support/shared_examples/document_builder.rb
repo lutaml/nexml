@@ -1,12 +1,11 @@
-RSpec.describe Moxml::DocumentBuilder do
+RSpec.shared_examples 'Moxml::DocumentBuilder' do
   let(:context) { Moxml.new }
-  let(:builder) { described_class.new(context) }
+  let(:builder) { Moxml::DocumentBuilder.new(context) }
 
   describe "#build" do
     it "builds a document model from native document" do
       xml = "<root><child>text</child></root>"
-      native_doc = context.config.adapter.parse(xml)
-      doc = builder.build(native_doc)
+      doc = context.config.adapter.parse(xml)
 
       expect(doc).to be_a(Moxml::Document)
       expect(doc.root).to be_a(Moxml::Element)
@@ -27,12 +26,12 @@ RSpec.describe Moxml::DocumentBuilder do
         </root>
       XML
 
-      native_doc = context.config.adapter.parse(xml)
-      doc = builder.build(native_doc)
+      doc = context.config.adapter.parse(xml)
 
       expect(doc.root.namespaces.first.uri).to eq("http://example.org")
       expect(doc.root.children[0]).to be_a(Moxml::Comment)
       expect(doc.root.children[1]).to be_a(Moxml::Element)
+      expect(doc.root.children[1].name).to eq("child")
       expect(doc.root.children[1]["id"]).to eq("1")
       expect(doc.root.children[1].children.first).to be_a(Moxml::Cdata)
       expect(doc.root.children[2]).to be_a(Moxml::ProcessingInstruction)

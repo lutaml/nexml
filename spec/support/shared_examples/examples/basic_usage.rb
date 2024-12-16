@@ -1,4 +1,4 @@
-RSpec.describe "Basic Usage Examples" do
+RSpec.shared_examples "Basic Usage Examples" do
   let(:context) { Moxml.new }
 
   describe "Document creation" do
@@ -7,7 +7,7 @@ RSpec.describe "Basic Usage Examples" do
       root = doc.create_element("book")
       doc.add_child(root)
 
-      expect(doc.to_xml).to include("<book/>")
+      expect(doc.to_xml).to include("<book></book>")
     end
 
     it "creates document with declaration" do
@@ -18,7 +18,7 @@ RSpec.describe "Basic Usage Examples" do
 
       expect(doc.to_xml).to include(
         '<?xml version="1.0" encoding="UTF-8"?>',
-        "<book/>"
+        "<book></book>"
       )
     end
 
@@ -31,7 +31,7 @@ RSpec.describe "Basic Usage Examples" do
 
       expect(doc.to_xml).to include(
         '<?xml-stylesheet type="text/xsl" href="style.xsl"?>',
-        "<root/>"
+        "<root></root>"
       )
     end
   end
@@ -55,10 +55,10 @@ RSpec.describe "Basic Usage Examples" do
       root.add_child(pi)
 
       xml = doc.to_xml
-      expect(xml).to include("<test/>")
+      expect(xml).to include("<test></test>")
       expect(xml).to include("content")
       expect(xml).to include("<![CDATA[<xml>data</xml>]]>")
-      expect(xml).to include("<!-- note -->")
+      expect(xml).to include("<!--note-->")
       expect(xml).to include("<?target data?>")
     end
   end

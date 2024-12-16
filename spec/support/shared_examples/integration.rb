@@ -1,11 +1,10 @@
-# spec/moxml/integration_spec.rb
-RSpec.describe "Moxml Integration" do
+RSpec.shared_examples 'Moxml Integration' do
   let(:context) { Moxml.new }
 
   describe "complete document workflow" do
-    it "builds and manipulates complex document" do
+    let(:doc) { context.create_document }
+    before do
       # Create document with declaration
-      doc = context.create_document
       doc.add_child(doc.create_declaration("1.0", "UTF-8"))
 
       # Add root with namespaces
@@ -32,22 +31,36 @@ RSpec.describe "Moxml Integration" do
       item["id"] = "123"
       item["xs:type"] = "custom"
       root.add_child(item)
+    end
 
+    it "has correct xml elements" do
       # Verify structure
-      expected_xml = [
+      expected_xml_tags = [
         '<?xml version="1.0" encoding="UTF-8"?>',
         '<?xml-stylesheet type="text/xsl" href="style.xsl"?>',
         '<root xmlns="http://example.org" xmlns:xs="http://www.w3.org/2001/XMLSchema">',
         "<!-- Mixed content example -->",
         "<text>Some text <![CDATA[<with><markup/>]]> and more text</text>",
-        '<item id="123" xs:type="custom"/>',
+        '<item id="123" xs:type="custom"></item>',
         "</root>"
       ]
-      expect(doc.to_xml).to include(expected_xml)
 
+      expected_xml_tags.each do |expected_xml|
+        # include(*expected_xml_tags) is shorter but worse for debugging
+        expect(doc.to_xml).to include(expected_xml)
+      end
+    end
+
+    it "handles xpath queries" do
       # Test XPath queries
-      expect(doc.xpath("//item[@id='123']")).not_to be_empty
-      expect(doc.at_xpath("//text").text).to include("Some text")
+      #
+      # XPath with a default namespace is a problem
+      # Nokogiri:
+      # https://timnew.me/blog/2012/10/25/pitfall-in-nokogiri-xpath-and-namespace/
+      # Oga:
+      # https://www.rubydoc.info/gems/oga/0.3.3#namespace-support
+      expect(doc.xpath('//xmlns:item[@id="123"]')).not_to be_empty
+      expect(doc.at_xpath("//xmlns:text").text).to include("Some text")
     end
   end
 
@@ -66,7 +79,7 @@ RSpec.describe "Moxml Integration" do
       doc = context.parse(xml)
 
       # Test namespace inheritance
-      child = doc.at_xpath("//child")
+      child = doc.at_xpath("//xmlns:child")
       expect(child.namespace.uri).to eq("http://default.org")
 
       # Test namespace prefix resolution
