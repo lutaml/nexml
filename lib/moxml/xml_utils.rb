@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require_relative "xml_utils/encoder"
 
 # Ruby 3.3+ requires the URI module to be explicitly required
@@ -10,13 +12,14 @@ module Moxml
     end
 
     def validate_declaration_version(version)
-      unless ::Moxml::Declaration::ALLOWED_VERSIONS.include?(version)
-        raise ValidationError, "Invalid XML version: #{version}"
-      end
+      return if ::Moxml::Declaration::ALLOWED_VERSIONS.include?(version)
+
+      raise ValidationError, "Invalid XML version: #{version}"
     end
 
     def validate_declaration_encoding(encoding)
       return if encoding.nil?
+
       begin
         Encoding.find(encoding)
       rescue ArgumentError
@@ -26,9 +29,9 @@ module Moxml
 
     def validate_declaration_standalone(standalone)
       return if standalone.nil?
-      unless ::Moxml::Declaration::ALLOWED_STANDALONE.include?(standalone)
-        raise ValidationError, "Invalid standalone value: #{standalone}"
-      end
+      return if ::Moxml::Declaration::ALLOWED_STANDALONE.include?(standalone)
+
+      raise ValidationError, "Invalid standalone value: #{standalone}"
     end
 
     def validate_comment_content(text)
@@ -36,33 +39,33 @@ module Moxml
         raise ValidationError, "XML comment cannot start or end with a hyphen"
       end
 
-      if text.include?("--")
-        raise ValidationError, "XML comment cannot contain double hyphens (--)"
-      end
+      return unless text.include?("--")
+
+      raise ValidationError, "XML comment cannot contain double hyphens (--)"
     end
 
     def validate_element_name(name)
-      unless name.is_a?(String) && name.match?(/^[a-zA-Z_][\w\-\.:]*$/)
-        raise ValidationError, "Invalid XML name: #{name}"
-      end
+      return if name.is_a?(String) && name.match?(/^[a-zA-Z_][\w\-.:]*$/)
+
+      raise ValidationError, "Invalid XML name: #{name}"
     end
 
     def validate_pi_target(target)
-      unless target.is_a?(String) && target.match?(/^[a-zA-Z_][\w\-\.]*$/)
-        raise ValidationError, "Invalid XML target: #{target}"
-      end
+      return if target.is_a?(String) && target.match?(/^[a-zA-Z_][\w\-.]*$/)
+
+      raise ValidationError, "Invalid XML target: #{target}"
     end
 
     def validate_uri(uri)
-      unless uri.empty? || uri.match?(/\A#{::URI::DEFAULT_PARSER.make_regexp}\z/)
-        raise ValidationError, "Invalid URI: #{uri}"
-      end
+      return if uri.empty? || uri.match?(/\A#{::URI::DEFAULT_PARSER.make_regexp}\z/)
+
+      raise ValidationError, "Invalid URI: #{uri}"
     end
 
     def validate_prefix(prefix)
-      unless prefix.match?(/\A[a-zA-Z_][\w\-]*\z/)
-        raise ValidationError, "Invalid namespace prefix: #{prefix}"
-      end
+      return if prefix.match?(/\A[a-zA-Z_][\w-]*\z/)
+
+      raise ValidationError, "Invalid namespace prefix: #{prefix}"
     end
 
     def normalize_xml_value(value)

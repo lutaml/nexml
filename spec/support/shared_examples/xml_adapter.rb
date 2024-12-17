@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 RSpec.shared_examples "xml adapter" do
   let(:xml) do
     <<~XML
@@ -24,13 +26,13 @@ RSpec.shared_examples "xml adapter" do
     it "handles malformed XML according to strict setting" do
       malformed = "<root><unclosed>"
 
-      expect {
+      expect do
         described_class.parse(malformed, strict: true)
-      }.to raise_error(Moxml::ParseError)
+      end.to raise_error(Moxml::ParseError)
 
-      expect {
+      expect do
         described_class.parse(malformed, strict: false)
-      }.not_to raise_error
+      end.not_to raise_error
     end
   end
 

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Moxml
   class Text < Node
     def content
@@ -6,7 +8,6 @@ module Moxml
 
     def content=(text)
       adapter.set_text_content(@native, normalize_xml_value(text))
-      self
     end
 
     def text?

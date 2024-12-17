@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require_relative "base"
 require "nokogiri"
 
@@ -11,20 +13,20 @@ module Moxml
 
         def parse(xml, options = {})
           native_doc = begin
-              if options[:fragment]
-                ::Nokogiri::XML::DocumentFragment.parse(xml) do |config|
-                  config.strict.nonet
-                  config.recover unless options[:strict]
-                end
-              else
-                ::Nokogiri::XML(xml, nil, options[:encoding]) do |config|
-                  config.strict.nonet
-                  config.recover unless options[:strict]
-                end
+            if options[:fragment]
+              ::Nokogiri::XML::DocumentFragment.parse(xml) do |config|
+                config.strict.nonet
+                config.recover unless options[:strict]
               end
-            rescue ::Nokogiri::XML::SyntaxError => e
-              raise Moxml::ParseError.new(e.message, line: e.line, column: e.column)
+            else
+              ::Nokogiri::XML(xml, nil, options[:encoding]) do |config|
+                config.strict.nonet
+                config.recover unless options[:strict]
+              end
             end
+          rescue ::Nokogiri::XML::SyntaxError => e
+            raise Moxml::ParseError.new(e.message, line: e.line, column: e.column)
+          end
 
           DocumentBuilder.new(Context.new(:nokogiri)).build(native_doc)
         end
@@ -32,7 +34,7 @@ module Moxml
         def create_document
           ::Nokogiri::XML::Document.new
         end
-        
+
         def create_fragment
           # document fragments are weird and should be used with caution:
           # https://github.com/sparklemotion/nokogiri/issues/572
@@ -93,7 +95,7 @@ module Moxml
           end
 
           declaration.native_content =
-            attrs.map { |k, v| %{#{k}="#{v}"} }.join(" ")
+            attrs.map { |k, v| %(#{k}="#{v}") }.join(" ")
         end
 
         def set_namespace(element, ns)
@@ -279,13 +281,13 @@ module Moxml
 
           # Don't force expand empty elements if they're really empty
           save_options |= ::Nokogiri::XML::Node::SaveOptions::NO_EMPTY_TAGS if options[:expand_empty]
-          save_options |= ::Nokogiri::XML::Node::SaveOptions::FORMAT if options[:indent].to_i > 0
+          save_options |= ::Nokogiri::XML::Node::SaveOptions::FORMAT if options[:indent].to_i.positive?
           save_options |= ::Nokogiri::XML::Node::SaveOptions::NO_DECLARATION if options[:no_declaration]
 
           node.to_xml(
             indent: options[:indent],
             encoding: options[:encoding],
-            save_with: save_options,
+            save_with: save_options
           )
         end
 
@@ -295,7 +297,7 @@ module Moxml
           attrs = { "version" => version }
           attrs["encoding"] = encoding if encoding
           attrs["standalone"] = standalone if standalone
-          attrs.map { |k, v| %{#{k}="#{v}"} }.join(" ")
+          attrs.map { |k, v| %(#{k}="#{v}") }.join(" ")
         end
 
         def current_declaration_attributes(declaration)

@@ -1,4 +1,6 @@
-RSpec.shared_examples 'Moxml::ProcessingInstruction' do
+# frozen_string_literal: true
+
+RSpec.shared_examples "Moxml::ProcessingInstruction" do
   let(:context) { Moxml.new }
   let(:doc) { context.create_document }
   let(:pi) { doc.create_processing_instruction("xml-stylesheet", 'href="style.xsl" type="text/xsl"') }

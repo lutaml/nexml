@@ -1,4 +1,6 @@
-RSpec.shared_examples 'Moxml::Element' do
+# frozen_string_literal: true
+
+RSpec.shared_examples "Moxml::Element" do
   describe Moxml::Element do
     let(:context) { Moxml.new }
     let(:doc) { context.create_document }

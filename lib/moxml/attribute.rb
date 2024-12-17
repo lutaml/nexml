@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Moxml
   class Attribute < Node
     def name
@@ -36,11 +38,12 @@ module Moxml
 
     def ==(other)
       return false unless other.is_a?(Attribute)
+
       name == other.name && value == other.value && namespace == other.namespace
     end
 
     def to_s
-      if namespace && namespace.prefix
+      if namespace&.prefix
         "#{namespace.prefix}:#{name}=\"#{value}\""
       else
         "#{name}=\"#{value}\""

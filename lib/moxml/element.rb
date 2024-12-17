@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require_relative "attribute"
 require_relative "namespace"
 
@@ -39,10 +41,10 @@ module Moxml
       validate_uri(uri)
       adapter.create_native_namespace(@native, prefix, uri)
       self
-    rescue ValidationError => err
-      raise Moxml::NamespaceError, err.message
+    rescue ValidationError => e
+      raise Moxml::NamespaceError, e.message
     end
-    alias :add_namespace_definition :add_namespace
+    alias add_namespace_definition add_namespace
 
     # it's NOT the same as namespaces.first
     def namespace
@@ -67,7 +69,7 @@ module Moxml
         Namespace.new(ns, context)
       end
     end
-    alias :namespace_definitions :namespaces
+    alias namespace_definitions namespaces
 
     def text
       adapter.text_content(@native)
@@ -75,7 +77,6 @@ module Moxml
 
     def text=(content)
       adapter.set_text_content(@native, normalize_xml_value(content))
-      self
     end
 
     def inner_html
@@ -85,7 +86,6 @@ module Moxml
     def inner_html=(html)
       doc = context.parse("<root>#{html}</root>")
       adapter.replace_children(@native, doc.root.children.map(&:native))
-      self
     end
 
     # Fluent interface methods

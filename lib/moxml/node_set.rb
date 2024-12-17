@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Moxml
   class NodeSet
     include Enumerable
@@ -11,6 +13,7 @@ module Moxml
 
     def each
       return to_enum(:each) unless block_given?
+
       nodes.each { |node| yield Node.wrap(node, context) }
       self
     end

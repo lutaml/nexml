@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 # spec/moxml/errors_spec.rb
 RSpec.describe "Moxml errors" do
   describe Moxml::Error do
@@ -46,24 +48,24 @@ RSpec.describe "Moxml errors" do
     let(:context) { Moxml.new }
 
     it "raises ParseError for invalid XML" do
-      expect {
+      expect do
         context.parse("<invalid>")
-      }.to raise_error(Moxml::ParseError)
+      end.to raise_error(Moxml::ParseError)
     end
 
     it "raises XPathError for invalid XPath" do
       doc = context.parse("<root/>")
-      expect {
+      expect do
         doc.xpath("///")
-      }.to raise_error(Moxml::XPathError)
+      end.to raise_error(Moxml::XPathError)
     end
 
     it "raises NamespaceError for invalid namespace" do
       doc = context.parse("<root/>")
 
-      expect {
+      expect do
         doc.root.add_namespace("xml", "http//invalid.com")
-      }.to raise_error(Moxml::NamespaceError, "Invalid URI: http//invalid.com")
+      end.to raise_error(Moxml::NamespaceError, "Invalid URI: http//invalid.com")
     end
   end
 end

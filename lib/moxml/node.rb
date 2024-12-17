@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require_relative "xml_utils"
 require_relative "node_set"
 
@@ -81,16 +83,16 @@ module Moxml
       return nil if node.nil?
 
       klass = case adapter(context).node_type(node)
-        when :element then Element
-        when :text then Text
-        when :cdata then Cdata
-        when :comment then Comment
-        when :processing_instruction then ProcessingInstruction
-        when :document then Document
-        when :declaration then Declaration
-        when :doctype then Doctype
-        else self
-        end
+              when :element then Element
+              when :text then Text
+              when :cdata then Cdata
+              when :comment then Comment
+              when :processing_instruction then ProcessingInstruction
+              when :document then Document
+              when :declaration then Declaration
+              when :doctype then Doctype
+              else self
+              end
 
       klass.new(node, context)
     end

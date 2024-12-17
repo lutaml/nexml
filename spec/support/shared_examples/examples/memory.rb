@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require "get_process_mem"
 require "tempfile"
 
@@ -19,10 +21,7 @@ RSpec.shared_examples "Memory Usage Examples" do
 
       # Process and remove nodes
       memory_before = GetProcessMem.new.bytes
-      doc.xpath("//large-node").each do |node|
-        node.remove
-        node = nil
-      end
+      doc.xpath("//large-node").each(&:remove)
       GC.start
       memory_after = GetProcessMem.new.bytes
 

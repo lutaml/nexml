@@ -1,3 +1,5 @@
+# rubocop:disable Style/FrozenStringLiteralComment
+
 require "oga"
 
 # monkey patch the Oga generator because it's not configurable
@@ -14,24 +16,23 @@ module Moxml
         def on_element(element, output)
           name = element.expanded_name
 
-          namespace_definitions = ''
-          element.namespaces.values.each do |ns|
-            namespace_definitions << ' '
+          namespace_definitions = ""
+          element.namespaces.each_value do |ns|
+            namespace_definitions << " "
             on_namespace_definition(ns, namespace_definitions)
           end
 
-          attrs = ''
+          attrs = ""
           element.attributes.each do |attr|
-            attrs << ' '
+            attrs << " "
             on_attribute(attr, attrs)
           end
 
-          closing_tag = 
-            if self_closing?(element)
-              html_void_element?(element) ? '>' : ' />'
-            else
-              ">"
-            end
+          closing_tag = if self_closing?(element)
+                          html_void_element?(element) ? ">" : " />"
+                        else
+                          ">"
+                        end
 
           output << "<#{name}#{namespace_definitions}#{attrs}#{closing_tag}"
         end
@@ -40,25 +41,23 @@ module Moxml
           name = "xmlns"
           name += ":#{ns.name}" unless ns.name.nil?
 
-          output << %Q(#{name}="#{ns.uri}")
+          output << %(#{name}="#{ns.uri}")
         end
 
         def on_attribute(attr, output)
           return super unless attr.value&.include?("'")
 
-          output << %Q(#{attr.expanded_name}="#{encode(attr.value)}")
+          output << %(#{attr.expanded_name}="#{encode(attr.value)}")
         end
-      
+
         def on_cdata(node, output)
           # Escape the end sequence
           return super unless node.text.include?("]]>")
 
           chunks = node.text.split(/(\]\]>)/)
-          if chunks.size == 1
-            chunks = ["]]", ">"]
-          end
+          chunks = ["]]", ">"] if chunks.size == 1
 
-          while index = chunks.index("]]>") do
+          while (index = chunks.index("]]>"))
             # the end tag cannot be the first and the last at the same time
 
             if index.zero?
@@ -92,7 +91,7 @@ module Moxml
         def on_xml_declaration(node, output)
           super
           # remove the space before the closing tag
-          output.gsub!(/ \?\>$/, '?>')
+          output.gsub!(/ \?>$/, "?>")
         end
 
         protected

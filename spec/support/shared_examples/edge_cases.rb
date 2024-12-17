@@ -1,4 +1,6 @@
-RSpec.shared_examples 'Moxml Edge Cases' do
+# frozen_string_literal: true
+
+RSpec.shared_examples "Moxml Edge Cases" do
   let(:context) { Moxml.new }
 
   describe "special characters handling" do
@@ -46,23 +48,23 @@ RSpec.shared_examples 'Moxml Edge Cases' do
 
     it "rejects comments with double hyphens" do
       doc = context.create_document
-      expect {
+      expect do
         doc.create_comment("-- test -- comment --")
-      }.to raise_error(Moxml::ValidationError, "XML comment cannot start or end with a hyphen")
+      end.to raise_error(Moxml::ValidationError, "XML comment cannot start or end with a hyphen")
     end
 
     it "rejects comments starting with hyphen" do
       doc = context.create_document
-      expect {
+      expect do
         doc.create_comment("-starting with hyphen")
-      }.to raise_error(Moxml::ValidationError, "XML comment cannot start or end with a hyphen")
+      end.to raise_error(Moxml::ValidationError, "XML comment cannot start or end with a hyphen")
     end
 
     it "rejects comments ending with hyphen" do
       doc = context.create_document
-      expect {
+      expect do
         doc.create_comment("ending with hyphen-")
-      }.to raise_error(Moxml::ValidationError, "XML comment cannot start or end with a hyphen")
+      end.to raise_error(Moxml::ValidationError, "XML comment cannot start or end with a hyphen")
     end
 
     it "accepts valid comments" do
@@ -125,7 +127,7 @@ RSpec.shared_examples 'Moxml Edge Cases' do
         "space" => " ",
         "tabs_newlines" => "\t\n",
         "unicode" => "⚡",
-        "entities" => "<&>'\"",
+        "entities" => "<&>'\""
       }
 
       special_values.each do |name, value|

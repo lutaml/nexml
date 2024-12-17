@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Moxml
   class Context
     attr_reader :config
@@ -20,7 +22,7 @@ module Moxml
       {
         encoding: config.default_encoding,
         strict: config.strict_parsing,
-        indent: config.default_indent,
+        indent: config.default_indent
       }
     end
   end

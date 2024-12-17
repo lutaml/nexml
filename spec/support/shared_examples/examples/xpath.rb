@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 RSpec.shared_examples "XPath Examples" do
   let(:context) { Moxml.new }
 
@@ -18,13 +20,13 @@ RSpec.shared_examples "XPath Examples" do
     it "finds nodes by XPath" do
       books = doc.xpath("//book")
       expect(books.size).to eq(2)
-      expect(books.map { |b| b["id"] }).to eq(["1", "2"])
+      expect(books.map { |b| b["id"] }).to eq(%w[1 2])
     end
 
     it "finds nodes with namespaces" do
       titles = doc.xpath("//dc:title",
                          "dc" => "http://purl.org/dc/elements/1.1/")
-      expect(titles.map(&:text)).to eq(["First", "Second"])
+      expect(titles.map(&:text)).to eq(%w[First Second])
     end
 
     it "finds nodes by attributes" do

@@ -1,4 +1,6 @@
-RSpec.shared_examples 'Moxml::Comment' do
+# frozen_string_literal: true
+
+RSpec.shared_examples "Moxml::Comment" do
   let(:context) { Moxml.new }
   let(:doc) { context.create_document }
   let(:comment) { doc.create_comment("test comment") }

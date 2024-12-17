@@ -1,9 +1,11 @@
-RSpec.shared_examples 'Moxml::Doctype' do
+# frozen_string_literal: true
+
+RSpec.shared_examples "Moxml::Doctype" do
   let(:context) { Moxml.new }
   let(:doc) { context.create_document }
   let(:doctype) do
     doc.create_doctype(
-      'html',
+      "html",
       "-//W3C//DTD HTML 4.01 Transitional//EN",
       "http://www.w3.org/TR/html4/loose.dtd"
     )

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require_relative "node"
 require_relative "element"
 require_relative "text"
@@ -77,7 +79,7 @@ module Moxml
     end
 
     def at_xpath(expression, namespaces = nil)
-      if native_node = adapter.at_xpath(@native, expression, namespaces)
+      if (native_node = adapter.at_xpath(@native, expression, namespaces))
         Node.wrap(native_node, context)
       end
     end

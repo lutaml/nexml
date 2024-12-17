@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Moxml
   class << self
     def new(adapter = nil, &block)

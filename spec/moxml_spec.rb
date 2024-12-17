@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 # spec/moxml_spec.rb
 RSpec.describe Moxml do
   it "has a version number" do

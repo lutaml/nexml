@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require_relative "base"
 require_relative "customized_oga/xml_generator"
 require_relative "customized_oga/xml_declaration"
@@ -8,16 +10,16 @@ module Moxml
     class Oga < Base
       class << self
         def set_root(doc, element)
-          doc.children.clear  # Clear any existing children
+          doc.children.clear # Clear any existing children
           doc.children << element
         end
 
         def parse(xml, options = {})
           native_doc = begin
-              ::Oga.parse_xml(xml, strict: options[:strict])
-            rescue LL::ParserError => e
-              raise Moxml::ParseError.new(e.message)
-            end
+            ::Oga.parse_xml(xml, strict: options[:strict])
+          rescue LL::ParserError => e
+            raise Moxml::ParseError, e.message
+          end
 
           DocumentBuilder.new(Context.new(:oga)).build(native_doc)
         end
@@ -44,7 +46,7 @@ module Moxml
 
         def create_native_doctype(name, external_id, system_id)
           ::Oga::XML::Doctype.new(
-            name: name, public_id: external_id, system_id: system_id, type: 'PUBLIC'
+            name: name, public_id: external_id, system_id: system_id, type: "PUBLIC"
           )
         end
 
@@ -122,14 +124,12 @@ module Moxml
 
         def children(node)
           all_children = []
-          
-          if node.is_a?(::Oga::XML::Document)
-            all_children += [node.xml_declaration, node.doctype].compact
-          end
+
+          all_children += [node.xml_declaration, node.doctype].compact if node.is_a?(::Oga::XML::Document)
 
           return all_children unless node.respond_to?(:children)
 
-          all_children += node.children.reject do |child|
+          all_children + node.children.reject do |child|
             child.is_a?(::Oga::XML::Text) &&
               child.text.strip.empty? &&
               !(child.previous.nil? && child.next.nil?)
@@ -150,9 +150,7 @@ module Moxml
 
         def document(node)
           current = node
-          while parent(current)
-            current = current.parent
-          end
+          current = current.parent while parent(current)
 
           current
         end
@@ -171,9 +169,7 @@ module Moxml
 
         def set_attribute(element, name, value)
           namespace_name = nil
-          if name.to_s.include?(':')
-            namespace_name, name = name.to_s.split(':', 2)
-          end
+          namespace_name, name = name.to_s.split(":", 2) if name.to_s.include?(":")
 
           attr = ::Oga::XML::Attribute.new(
             name: name.to_s,
@@ -275,16 +271,17 @@ module Moxml
 
         def namespace_definitions(node)
           return [] unless node.respond_to?(:namespaces)
+
           node.namespaces.values
         end
 
-        def xpath(node, expression, namespaces = {})
+        def xpath(node, expression, _namespaces = {})
           node.xpath(expression).to_a
         rescue ::LL::ParserError => e
           raise Moxml::XPathError, e.message
         end
 
-        def at_xpath(node, expression, namespaces = {})
+        def at_xpath(node, expression, _namespaces = {})
           node.at_xpath(expression)
         rescue ::Oga::XPath::Error => e
           raise Moxml::XPathError, e.message

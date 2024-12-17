@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 # spec/moxml/config_spec.rb
 RSpec.describe Moxml::Config do
   subject(:config) { described_class.new }

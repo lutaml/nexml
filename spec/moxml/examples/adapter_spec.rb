@@ -1,8 +1,11 @@
+# frozen_string_literal: true
+
 RSpec.describe "Adapter Examples" do
   let(:xml) { "<root><child>text</child></root>" }
 
   describe "Serialization consistency" do
-    it "produces equivalent XML across adapters", skip: "No easy way to exclude the declaration from Nokogiri documents" do
+    it "produces equivalent XML across adapters",
+       skip: "No easy way to exclude the declaration from Nokogiri documents" do
       docs = Moxml::Adapter::AVALIABLE_ADAPTERS.map do |adapter|
         Moxml.new(adapter).parse(xml, fragment: true)
       end

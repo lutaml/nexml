@@ -1,4 +1,6 @@
-RSpec.shared_examples 'Moxml::Context' do
+# frozen_string_literal: true
+
+RSpec.shared_examples "Moxml::Context" do
   let(:context) { Moxml::Context.new }
 
   describe "#parse" do

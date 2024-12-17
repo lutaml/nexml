@@ -1,4 +1,6 @@
-RSpec.shared_examples 'Moxml Integration' do
+# frozen_string_literal: true
+
+RSpec.shared_examples "Moxml Integration" do
   let(:context) { Moxml.new }
 
   describe "complete document workflow" do
@@ -118,7 +120,7 @@ RSpec.shared_examples 'Moxml Integration' do
       b_node.add_child(doc.create_comment(" comment "))
       b_node.add_child(doc.create_cdata("<tag>"))
 
-      expect(doc.root.children.map(&:name)).to eq(["a", "b", "c"])
+      expect(doc.root.children.map(&:name)).to eq(%w[a b c])
       expect(doc.to_xml).to include(
         '<root id="main">',
         "<b>2<!-- comment --><![CDATA[<tag>]]></b>"

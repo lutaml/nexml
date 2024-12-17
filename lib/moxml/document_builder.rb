@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Moxml
   class DocumentBuilder
     attr_reader :context
@@ -16,11 +18,11 @@ module Moxml
     private
 
     def visit_node(node)
-      node_name = node.respond_to?(:name) ? node.name : node
+      node.respond_to?(:name) ? node.name : node
       method_name = "visit_#{node_type(node)}"
-      if respond_to?(method_name, true)
-        send(method_name, node)
-      end
+      return unless respond_to?(method_name, true)
+
+      send(method_name, node)
     end
 
     def visit_document(doc)
