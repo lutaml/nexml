@@ -1,4 +1,3 @@
-# lib/moxml/config.rb
 module Moxml
   class Config
     VALID_ADAPTERS = [:nokogiri, :oga, :ox].freeze

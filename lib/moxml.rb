@@ -1,4 +1,3 @@
-# lib/moxml.rb
 module Moxml
   class << self
     def new(adapter = nil, &block)
