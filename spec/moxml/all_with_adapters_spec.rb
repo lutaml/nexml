@@ -31,14 +31,9 @@ RSpec.describe "Test all shared examples" do
   # [:oga].each do |adapter_name|
     context "with #{adapter_name}" do
       around do |example|
-        Moxml.configure do |config|
-          config.adapter = adapter_name
+        Moxml.with_config(adapter_name) do
+          example.run
         end
-
-        example.run
-
-        # reset to default settings
-        Moxml.configure {}
       end
 
       all_shared_examples.each do |shared_example_name|
