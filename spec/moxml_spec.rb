@@ -20,17 +20,9 @@ RSpec.describe Moxml do
   end
 
   describe ".configure" do
-    around(:example) do |example|
-      original_default = Moxml::Config.default.dup
-
-      example.run
-
-      # reset configuration, otherwise it will impact other specs
-      Moxml.configure do |config|
-        config.adapter = original_default.adapter_name
-        config.strict_parsing = original_default.strict_parsing
-        config.default_encoding = original_default.strict_parsing
-      end
+    around do |example|
+      # preserve the original config because it may be changed in examples
+      Moxml.with_config { example.run }
     end
 
     it "sets default values without a block" do
