@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 RSpec.shared_examples "Basic Usage Examples" do
   let(:context) { Moxml.new }
 

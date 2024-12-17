@@ -1,4 +1,6 @@
-RSpec.shared_examples 'Moxml::Declaration' do
+# frozen_string_literal: true
+
+RSpec.shared_examples "Moxml::Declaration" do
   let(:context) { Moxml.new }
   let(:doc) { context.create_document }
   let(:declaration) { doc.create_declaration("1.0", "UTF-8", "yes") }

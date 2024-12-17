@@ -1,4 +1,6 @@
-RSpec.shared_examples 'Moxml::DocumentBuilder' do
+# frozen_string_literal: true
+
+RSpec.shared_examples "Moxml::DocumentBuilder" do
   let(:context) { Moxml.new }
   let(:builder) { Moxml::DocumentBuilder.new(context) }
 

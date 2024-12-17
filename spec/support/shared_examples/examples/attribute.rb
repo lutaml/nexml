@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 RSpec.shared_examples "Attribute Examples" do
   let(:context) { Moxml.new }
   let(:doc) { context.create_document }

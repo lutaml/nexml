@@ -1,4 +1,6 @@
-RSpec.shared_examples 'Moxml::Namespace' do
+# frozen_string_literal: true
+
+RSpec.shared_examples "Moxml::Namespace" do
   describe Moxml::Namespace do
     let(:context) { Moxml.new }
     let(:doc) { context.create_document }
@@ -23,9 +25,9 @@ RSpec.shared_examples 'Moxml::Namespace' do
       end
 
       it "validates URI" do
-        expect {
+        expect do
           element.add_namespace("xs", "invalid uri")
-        }.to raise_error(Moxml::NamespaceError, "Invalid URI: invalid uri")
+        end.to raise_error(Moxml::NamespaceError, "Invalid URI: invalid uri")
       end
     end
 

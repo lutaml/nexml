@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 RSpec.shared_examples "Thread Safety Examples" do
   describe "Thread-safe processing" do
     let(:processor_class) do

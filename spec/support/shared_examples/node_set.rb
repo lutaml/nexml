@@ -1,4 +1,6 @@
-RSpec.shared_examples 'Moxml::NodeSet' do
+# frozen_string_literal: true
+
+RSpec.shared_examples "Moxml::NodeSet" do
   describe Moxml::NodeSet do
     let(:context) { Moxml.new }
     let(:xml) do
@@ -25,18 +27,18 @@ RSpec.shared_examples 'Moxml::NodeSet' do
       it "iterates over nodes" do
         texts = []
         nodes.each { |node| texts << node.text }
-        expect(texts).to eq(["First", "Second", "Third"])
+        expect(texts).to eq(%w[First Second Third])
       end
 
       it "maps nodes" do
         texts = nodes.map(&:text)
-        expect(texts).to eq(["First", "Second", "Third"])
+        expect(texts).to eq(%w[First Second Third])
       end
 
       it "selects nodes" do
         selected = nodes.select { |node| node.text.include?("i") }
         expect(selected.size).to eq(2)
-        expect(selected.map(&:text)).to eq(["First", "Third"])
+        expect(selected.map(&:text)).to eq(%w[First Third])
       end
     end
 
@@ -51,7 +53,7 @@ RSpec.shared_examples 'Moxml::NodeSet' do
         subset = nodes[0..1]
         expect(subset).to be_a(described_class)
         expect(subset.size).to eq(2)
-        expect(subset.map(&:text)).to eq(["First", "Second"])
+        expect(subset.map(&:text)).to eq(%w[First Second])
       end
 
       it "provides first and last" do
@@ -81,7 +83,7 @@ RSpec.shared_examples 'Moxml::NodeSet' do
 
         expect(combined).to be_a(described_class)
         expect(combined.size).to eq(4)
-        expect(combined.map(&:text)).to eq(["First", "Second", "Third", "Fourth"])
+        expect(combined.map(&:text)).to eq(%w[First Second Third Fourth])
       end
     end
   end

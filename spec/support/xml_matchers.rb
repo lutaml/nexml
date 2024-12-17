@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 # spec/support/xml_matchers.rb
 # RSpec::Matchers.define :be_equivalent_to do |expected|
 #   match do |actual|
@@ -19,7 +21,7 @@ RSpec::Matchers.define :have_xpath do |xpath, text|
     text.nil? ? !nodes.empty? : nodes.any? { |node| node.text == text }
   end
 
-  failure_message do |xml_node|
+  failure_message do |_xml_node|
     "expected to find xpath #{xpath} #{text ? "with text '#{text}'" : ""}"
   end
 end

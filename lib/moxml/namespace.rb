@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Moxml
   class Namespace < Node
     def prefix
@@ -14,9 +16,9 @@ module Moxml
 
     def to_s
       if prefix
-        %{xmlns:#{prefix}="#{uri}"}
+        %(xmlns:#{prefix}="#{uri}")
       else
-        %{xmlns="#{uri}"}
+        %(xmlns="#{uri}")
       end
     end
 

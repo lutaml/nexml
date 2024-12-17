@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 RSpec.shared_examples "README Examples" do
   describe "Quick Start example" do
     it "builds document as shown in README" do
@@ -34,7 +36,7 @@ RSpec.shared_examples "README Examples" do
       doc.add_child(root)
 
       # Add books
-      ["Ruby", "XML"].each do |title|
+      %w[Ruby XML].each do |title|
         book = doc.create_element("book")
 
         # Add metadata
@@ -64,14 +66,14 @@ RSpec.shared_examples "README Examples" do
     it "handles errors as shown in README" do
       context = Moxml.new
 
-      expect {
+      expect do
         context.parse("<invalid>")
-      }.to raise_error(Moxml::ParseError)
+      end.to raise_error(Moxml::ParseError)
 
       doc = context.parse("<root/>")
-      expect {
+      expect do
         doc.xpath("///")
-      }.to raise_error(Moxml::XPathError)
+      end.to raise_error(Moxml::XPathError)
     end
   end
 

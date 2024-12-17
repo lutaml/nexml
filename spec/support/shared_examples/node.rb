@@ -1,4 +1,6 @@
-RSpec.shared_examples 'Moxml::Node' do
+# frozen_string_literal: true
+
+RSpec.shared_examples "Moxml::Node" do
   describe Moxml::Node do
     let(:context) { Moxml.new }
     let(:doc) { context.parse("<root><child>text</child></root>") }
@@ -77,14 +79,14 @@ RSpec.shared_examples 'Moxml::Node' do
 
       it "uses native serialization" do
         expect(context.config.adapter).to receive(:serialize)
-            .with(doc.native, hash_including(indent: 2))
+          .with(doc.native, hash_including(indent: 2))
 
         doc.to_xml(indent: 2)
       end
 
       it "passes through serialization options" do
         expect(context.config.adapter).to receive(:serialize)
-            .with(doc.native, hash_including(encoding: "UTF-8", indent: 4))
+          .with(doc.native, hash_including(encoding: "UTF-8", indent: 4))
 
         doc.to_xml(encoding: "UTF-8", indent: 4)
       end
@@ -96,7 +98,7 @@ RSpec.shared_examples 'Moxml::Node' do
       it "finds nodes by xpath" do
         nodes = doc.xpath("//b")
         expect(nodes.size).to eq(2)
-        expect(nodes.map(&:text)).to eq(["1", "2"])
+        expect(nodes.map(&:text)).to eq(%w[1 2])
       end
 
       it "finds first node by xpath" do

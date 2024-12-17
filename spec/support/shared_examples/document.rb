@@ -1,4 +1,6 @@
-RSpec.shared_examples 'Moxml::Document' do
+# frozen_string_literal: true
+
+RSpec.shared_examples "Moxml::Document" do
   let(:context) { Moxml.new }
   let(:xml) do
     <<~XML

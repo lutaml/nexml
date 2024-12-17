@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Moxml
   class ProcessingInstruction < Node
     def target
@@ -6,7 +8,6 @@ module Moxml
 
     def target=(new_target)
       adapter.set_node_name(@native, new_target.to_s)
-      self
     end
 
     def content
@@ -15,7 +16,6 @@ module Moxml
 
     def content=(new_content)
       adapter.set_processing_instruction_content(@native, new_content.to_s)
-      self
     end
 
     def processing_instruction?

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require_relative "base"
 require "ox"
 
@@ -9,21 +11,21 @@ module Moxml
           replace_children(doc, [element])
         end
 
-        def parse(xml, options = {})
+        def parse(xml, _options = {})
           native_doc = begin
-              result = ::Ox.parse(xml)
+            result = ::Ox.parse(xml)
 
-              # result can be either Document or Element
-              if result.is_a?(::Ox::Document)
-                result
-              else
-                doc = ::Ox::Document.new
-                doc << result
-                doc
-              end
-            rescue ::Ox::ParseError => e
-              raise Moxml::ParseError.new(e.message)
+            # result can be either Document or Element
+            if result.is_a?(::Ox::Document)
+              result
+            else
+              doc = ::Ox::Document.new
+              doc << result
+              doc
             end
+          rescue ::Ox::ParseError => e
+            raise Moxml::ParseError, e.message
+          end
 
           DocumentBuilder.new(Context.new(:ox)).build(native_doc)
         end
@@ -87,8 +89,10 @@ module Moxml
 
         def namespace(element)
           return nil unless element.attributes
+
           xmlns_attr = element.attributes.find { |k, _| k.start_with?("xmlns:") || k == "xmlns" }
           return nil unless xmlns_attr
+
           prefix = xmlns_attr[0] == "xmlns" ? nil : xmlns_attr[0].sub("xmlns:", "")
           [prefix, xmlns_attr[1]]
         end
@@ -110,7 +114,9 @@ module Moxml
         end
 
         def node_name(node)
-          node.value rescue node.name
+          node.value
+        rescue StandardError
+          node.name
         end
 
         def set_node_name(node, name)
@@ -120,6 +126,7 @@ module Moxml
 
         def children(node)
           return [] unless node.respond_to?(:nodes)
+
           node.nodes || []
         end
 
@@ -128,7 +135,7 @@ module Moxml
         end
 
         def next_sibling(node)
-          return unless parent = parent(node)
+          return unless (parent = parent(node))
 
           siblings = parent.nodes
           idx = siblings.index(node)
@@ -136,18 +143,16 @@ module Moxml
         end
 
         def previous_sibling(node)
-          return unless parent = parent(node)
+          return unless (parent = parent(node))
 
           siblings = parent.nodes
           idx = siblings.index(node)
-          idx && idx > 0 ? siblings[idx - 1] : nil
+          idx&.positive? ? siblings[idx - 1] : nil
         end
 
         def document(node)
           current = node
-          while parent(current)
-            current = parent(current)
-          end
+          current = parent(current) while parent(current)
           current
         end
 
@@ -157,6 +162,7 @@ module Moxml
 
         def attributes(element)
           return {} unless element.respond_to?(:attributes) && element.attributes
+
           element.attributes.reject { |k, _| k.start_with?("xmlns") }
         end
 
@@ -167,11 +173,13 @@ module Moxml
 
         def get_attribute(element, name)
           return nil unless element.respond_to?(:attributes) && element.attributes
+
           element.attributes[name.to_s]
         end
 
         def remove_attribute(element, name)
           return unless element.respond_to?(:attributes) && element.attributes
+
           element.attributes.delete(name.to_s)
         end
 
@@ -252,8 +260,10 @@ module Moxml
 
         def namespace_definitions(node)
           return [] unless node.respond_to?(:attributes) && node.attributes
+
           node.attributes.each_with_object([]) do |(name, value), namespaces|
             next unless name.start_with?("xmlns")
+
             prefix = name == "xmlns" ? nil : name.sub("xmlns:", "")
             namespaces << [prefix, value]
           end
@@ -280,7 +290,7 @@ module Moxml
             indent: options[:indent] || -1,
             with_xml: true,
             with_instructions: true,
-            encoding: options[:encoding],
+            encoding: options[:encoding]
           }
           ::Ox.dump(node, ox_options)
         end
@@ -289,20 +299,22 @@ module Moxml
 
         def traverse(node, &block)
           return unless node
+
           yield node
           return unless node.respond_to?(:nodes)
+
           node.nodes&.each { |child| traverse(child, &block) }
         end
 
-        def matches_xpath?(node, expression, namespaces = {})
+        def matches_xpath?(node, expression, _namespaces = {})
           case expression
           when %r{//(\w+)}
-            node.is_a?(::Ox::Element) && node.value == $1
+            node.is_a?(::Ox::Element) && node.value == ::Regexp.last_match(1)
           when %r{//(\w+)\[@(\w+)='([^']+)'\]}
             node.is_a?(::Ox::Element) &&
-              node.value == $1 &&
+              node.value == ::Regexp.last_match(1) &&
               node.attributes &&
-              node.attributes[$2] == $3
+              node.attributes[::Regexp.last_match(2)] == ::Regexp.last_match(3)
           else
             false
           end

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require_relative "../xml_utils"
 require_relative "../document_builder"
 

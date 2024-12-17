@@ -1,4 +1,6 @@
-RSpec.shared_examples 'Moxml::Cdata' do
+# frozen_string_literal: true
+
+RSpec.shared_examples "Moxml::Cdata" do
   let(:context) { Moxml.new }
   let(:doc) { context.create_document }
   let(:cdata) { doc.create_cdata("<content>") }

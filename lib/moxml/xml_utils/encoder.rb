@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Moxml
   module XmlUtils
     class Encoder
@@ -8,19 +10,19 @@ module Moxml
         basic: {
           "<" => "&lt;",
           ">" => "&gt;",
-          "&" => "&amp;",
+          "&" => "&amp;"
         },
         quotes: {
-          "'"  => "&apos;",
-          '"'  => "&quot;",
+          "'" => "&apos;",
+          '"' => "&quot;"
         },
         full: {
           "<" => "&lt;",
           ">" => "&gt;",
-          "'"  => "&apos;",
-          '"'  => "&quot;",
-          "&" => "&amp;",
-        },
+          "'" => "&apos;",
+          '"' => "&quot;",
+          "&" => "&amp;"
+        }
       }.freeze
       MODES = MAPPINGS.keys.freeze
 
