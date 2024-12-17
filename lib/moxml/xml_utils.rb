@@ -1,6 +1,9 @@
 # lib/moxml/xml_utils.rb
 require_relative "xml_utils/encoder"
 
+# Ruby 3.3+ requires the URI module to be explicitly required
+require "uri" unless defined?(::URI)
+
 module Moxml
   module XmlUtils
     def encode_entities(text, mode = nil)
