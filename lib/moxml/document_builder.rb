@@ -1,4 +1,3 @@
-# lib/moxml/document_builder.rb
 module Moxml
   class DocumentBuilder
     attr_reader :context

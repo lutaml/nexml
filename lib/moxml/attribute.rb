@@ -1,4 +1,3 @@
-# lib/moxml/attribute.rb
 module Moxml
   class Attribute < Node
     def name

@@ -1,4 +1,3 @@
-# lib/moxml/declaration.rb
 module Moxml
   class Declaration < Node
     ALLOWED_VERSIONS = ["1.0", "1.1"].freeze

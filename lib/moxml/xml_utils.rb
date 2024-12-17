@@ -1,4 +1,3 @@
-# lib/moxml/xml_utils.rb
 require_relative "xml_utils/encoder"
 
 # Ruby 3.3+ requires the URI module to be explicitly required
