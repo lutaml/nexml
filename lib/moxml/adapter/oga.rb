@@ -80,7 +80,7 @@ module Moxml
           return ns unless ns.nil?
 
           # Oga creates an attribute and registers a namespace
-          set_attribute(element, [::Oga::XML::Element::XMLNS_PREFIX, prefix].compact.join(':'), uri)
+          set_attribute(element, [::Oga::XML::Element::XMLNS_PREFIX, prefix].compact.join(":"), uri)
           element.register_namespace(prefix, uri)
           ::Oga::XML::Namespace.new(name: prefix, uri: uri)
         end
@@ -169,6 +169,7 @@ module Moxml
 
         def attributes(element)
           return [] unless element.respond_to?(:attributes)
+
           # remove attributes-namespaces
           element.attributes.reject do |attr|
             attr.name == ::Oga::XML::Element::XMLNS_PREFIX || attr.namespace_name == ::Oga::XML::Element::XMLNS_PREFIX
@@ -272,6 +273,7 @@ module Moxml
         def namespace_prefix(namespace)
           # nil for the default namespace
           return if namespace.name == ::Oga::XML::Element::XMLNS_PREFIX
+
           namespace.name
         end
 
