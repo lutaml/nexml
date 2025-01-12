@@ -148,8 +148,11 @@ RSpec.shared_examples "xml adapter" do
 
     it "serializes to XML" do
       result = described_class.serialize(doc)
+
       expect(result).to include("<?xml")
       expect(result).to include("<root")
+      expect(result).to include('xmlns="http://example.org"').once
+      expect(result).to include('xmlns:x="http://example.org/x"').once
       expect(result).to include("</root>")
     end
 

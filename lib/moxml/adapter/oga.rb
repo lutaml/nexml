@@ -79,6 +79,8 @@ module Moxml
           ns = element.available_namespaces[prefix]
           return ns unless ns.nil?
 
+          # Oga creates an attribute and registers a namespace
+          set_attribute(element, [::Oga::XML::Element::XMLNS_PREFIX, prefix].compact.join(':'), uri)
           element.register_namespace(prefix, uri)
           ::Oga::XML::Namespace.new(name: prefix, uri: uri)
         end
@@ -88,9 +90,11 @@ module Moxml
         end
 
         def namespace(element)
-          ns = element.respond_to?(:namespaces) && element.namespaces.values.last
-          ns ||= element.respond_to?(:namespace) && element.namespace
-          ns
+          if element.respond_to?(:namespace)
+            element.namespace
+          elsif element.respond_to?(:namespaces)
+            element.namespaces.values.last
+          end
         rescue NoMethodError
           # Oga attributes fail with NoMethodError:
           # undefined method `available_namespaces' for nil:NilClass
@@ -164,7 +168,11 @@ module Moxml
         end
 
         def attributes(element)
-          element.respond_to?(:attributes) ? element.attributes : []
+          return [] unless element.respond_to?(:attributes)
+          # remove attributes-namespaces
+          element.attributes.reject do |attr|
+            attr.name == ::Oga::XML::Element::XMLNS_PREFIX || attr.namespace_name == ::Oga::XML::Element::XMLNS_PREFIX
+          end
         end
 
         def set_attribute(element, name, value)
@@ -262,6 +270,8 @@ module Moxml
         end
 
         def namespace_prefix(namespace)
+          # nil for the default namespace
+          return if namespace.name == ::Oga::XML::Element::XMLNS_PREFIX
           namespace.name
         end
 
