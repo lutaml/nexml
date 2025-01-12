@@ -80,6 +80,11 @@ RSpec.shared_examples "Moxml Integration" do
 
       doc = context.parse(xml)
 
+      # Test root namespace
+      root = doc.root
+      expect(root.namespace.prefix).to be_nil
+      expect(root.namespace.uri).to eq("http://default.org")
+
       # Test namespace inheritance
       child = doc.at_xpath("//xmlns:child")
       expect(child.namespace.uri).to eq("http://default.org")

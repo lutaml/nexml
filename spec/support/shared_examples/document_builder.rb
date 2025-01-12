@@ -30,6 +30,7 @@ RSpec.shared_examples "Moxml::DocumentBuilder" do
 
       doc = context.config.adapter.parse(xml)
 
+      expect(doc.root.namespaces.count).to eq(1)
       expect(doc.root.namespaces.first.uri).to eq("http://example.org")
       expect(doc.root.children[0]).to be_a(Moxml::Comment)
       expect(doc.root.children[1]).to be_a(Moxml::Element)
