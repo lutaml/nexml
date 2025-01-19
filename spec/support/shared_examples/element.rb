@@ -79,8 +79,8 @@ RSpec.shared_examples "Moxml::Element" do
         expect(element.text).to eq("firstsecond")
       end
 
-      it "sets inner HTML" do
-        element.inner_html = "<child>text</child>"
+      it "sets inner XML" do
+        element.inner_xml = "<child>text</child>"
         expect(element.children.size).to eq(1)
         expect(element.children.first.name).to eq("child")
         expect(element.children.first.text).to eq("text")
