@@ -1,20 +1,25 @@
 # frozen_string_literal: true
 
 RSpec.shared_examples "README Examples" do
-  describe "Quick Start example" do
+  describe "Basic document creation" do
     it "builds document as shown in README" do
-      context = Moxml.new
-      doc = context.create_document
+      doc = Moxml.new.create_document
 
+      # Add XML declaration
+      doc.add_child(doc.create_declaration("1.0", "UTF-8"))
+
+      # Create root element with namespace
       root = doc.create_element("book")
+      root.add_namespace("dc", "http://purl.org/dc/elements/1.1/")
       doc.add_child(root)
 
-      root.add_namespace("dc", "http://purl.org/dc/elements/1.1/")
+      # Add content
       title = doc.create_element("dc:title")
-      title.add_child(doc.create_text("XML Processing with Ruby"))
+      title.text = 'XML Processing with Ruby'
       root.add_child(title)
 
       expect(doc.to_xml).to include(
+        '<?xml version="1.0" encoding="UTF-8"?>',
         '<book xmlns:dc="http://purl.org/dc/elements/1.1/">',
         "<dc:title>XML Processing with Ruby</dc:title>",
         "</book>"
@@ -22,7 +27,42 @@ RSpec.shared_examples "README Examples" do
     end
   end
 
-  describe "Complex document example" do
+  describe "Using the builder pattern" do
+    it 'builds a correct document' do
+      doc = Moxml::Builder.new(Moxml.new).build do
+        declaration version: "1.0", encoding: "UTF-8"
+
+        element 'library', xmlns: 'http://example.org/library' do
+          element 'book' do
+            element 'title' do
+              text 'Ruby Programming'
+            end
+
+            element 'author' do
+              text 'Jane Smith'
+            end
+
+            comment 'Publication details'
+            element 'published', year: '2024'
+
+            cdata '<custom>metadata</custom>'
+          end
+        end
+      end
+
+      expect(doc.to_xml).to include(
+        '<?xml version="1.0" encoding="UTF-8"?>',
+        '<library xmlns="http://example.org/library">',
+        '<title>Ruby Programming</title>',
+        '<!--Publication details-->',
+        '<published year="2024"></published>',
+        '<![CDATA[<custom>metadata</custom>]]>',
+        "</book>"
+      )
+    end
+  end
+
+  describe "Direct document manipulation" do
     it "builds document with all features" do
       doc = Moxml.new.create_document
 
@@ -38,10 +78,12 @@ RSpec.shared_examples "README Examples" do
       # Add books
       %w[Ruby XML].each do |title|
         book = doc.create_element("book")
+        book['id'] = "b1-#{title}"
 
-        # Add metadata
+        # Add mixed content
+        book.add_child(doc.create_comment('Book details'))
         dc_title = doc.create_element("dc:title")
-        dc_title.add_child(doc.create_text(title))
+        dc_title.text = title
         book.add_child(dc_title)
 
         # Add description
@@ -52,13 +94,16 @@ RSpec.shared_examples "README Examples" do
         root.add_child(book)
       end
 
-      xml = doc.to_xml
-      expect(xml).to include('<?xml version="1.0" encoding="UTF-8"?>')
-      expect(xml).to include('<library xmlns="http://example.org/library" xmlns:dc="http://purl.org/dc/elements/1.1/">')
-      expect(xml).to include("<dc:title>Ruby</dc:title>")
-      expect(xml).to include("<![CDATA[About Ruby...]]>")
-      expect(xml).to include("<dc:title>XML</dc:title>")
-      expect(xml).to include("<![CDATA[About XML...]]>")
+      expect(doc.to_xml).to include(
+        '<?xml version="1.0" encoding="UTF-8"?>',
+        '<library xmlns="http://example.org/library" xmlns:dc="http://purl.org/dc/elements/1.1/">',
+        '<book id="b1-Ruby">',
+        "<!--Book details-->",
+        "<dc:title>Ruby</dc:title>",
+        "<![CDATA[About Ruby...]]>",
+        "<dc:title>XML</dc:title>",
+        "<![CDATA[About XML...]]>"
+      )
     end
   end
 
@@ -69,6 +114,18 @@ RSpec.shared_examples "README Examples" do
       expect do
         context.parse("<invalid>")
       end.to raise_error(Moxml::ParseError)
+
+      expect do
+        doc = context.parse('<root/>')
+        root = doc.root
+        root.add_namespace("n", "wrong.url")
+      end.to raise_error(Moxml::NamespaceError)
+
+      expect do
+        doc = context.parse('<root/>')
+        element = doc.create_element("wrong,name")
+        doc.add_child(element)
+      end.to raise_error(Moxml::ValidationError)
 
       doc = context.parse("<root/>")
       expect do
