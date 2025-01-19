@@ -32,7 +32,7 @@ Install the gem and at least one supported XML library:
 ----
 # In your Gemfile
 gem 'moxml'
-gem 'nokogiri'  # Or 'ox' or 'oga'
+gem 'nokogiri'  # Or 'oga', or 'ox' when it is integrated
 ----
 
 === Basic document creation
@@ -45,7 +45,7 @@ require 'moxml'
 doc = Moxml.new.create_document
 
 # Add XML declaration
-doc.add_declaration(version: "1.0", encoding: "UTF-8")
+doc.add_child(doc.create_declaration("1.0", "UTF-8"))
 
 # Create root element with namespace
 root = doc.create_element('book')
@@ -69,7 +69,7 @@ The builder pattern provides a clean DSL for creating XML documents:
 
 [source,ruby]
 ----
-doc = Moxml.new.build do
+doc = Moxml::Builder.new(Moxml.new).build do
   declaration version: "1.0", encoding: "UTF-8"
 
   element 'library', xmlns: 'http://example.org/library' do
@@ -98,11 +98,12 @@ end
 doc = Moxml.new.create_document
 
 # Add declaration
-doc.add_declaration(version: "1.0", encoding: "UTF-8")
+doc.add_child(doc.create_declaration("1.0", "UTF-8"))
 
 # Create root with namespace
 root = doc.create_element('library')
 root.add_namespace(nil, 'http://example.org/library')
+root.add_namespace("dc", "http://purl.org/dc/elements/1.1/")
 doc.add_child(root)
 
 # Add elements with attributes
@@ -131,23 +132,23 @@ doc = Moxml.new.create_document
 doc = Moxml.new.parse(xml_string)
 
 # Document properties and methods
-doc.encoding                # Get document encoding
-doc.encoding = "UTF-8"      # Set document encoding
+doc.encoding               # Get document encoding
+doc.encoding = "UTF-8"     # Set document encoding
 doc.version                # Get XML version
 doc.version = "1.1"        # Set XML version
 doc.standalone             # Get standalone declaration
 doc.standalone = "yes"     # Set standalone declaration
 
 # Document structure
-doc.root                   # Get root element
+doc.root                  # Get root element
 doc.children              # Get all top-level nodes
 doc.add_child(node)       # Add a child node
 doc.remove_child(node)    # Remove a child node
 
 # Node creation methods
-doc.create_element(name)   # Create new element
-doc.create_text(content)   # Create text node
-doc.create_cdata(content)  # Create CDATA section
+doc.create_element(name)    # Create new element
+doc.create_text(content)    # Create text node
+doc.create_cdata(content)   # Create CDATA section
 doc.create_comment(content) # Create comment
 doc.create_processing_instruction(target, content) # Create PI
 
@@ -444,6 +445,9 @@ rescue Moxml::ValidationError => e
 rescue Moxml::XPathError => e
   # Handles XPath expression errors
   puts "XPath error: #{e.message}"
+rescue Moxml::NamespaceError => e
+  # Handles namespace errors
+  puts "Namespace error: #{e.message}"
 rescue Moxml::Error => e
   # Handles other Moxml-specific errors
   puts "Error: #{e.message}"
@@ -465,7 +469,7 @@ end
 
 # Instance configuration
 moxml = Moxml.new do |config|
-  config.adapter = :ox
+  config.adapter = :oga
   config.strict = false
 end
 ----
