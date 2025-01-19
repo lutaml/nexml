@@ -80,7 +80,7 @@ RSpec.shared_examples "Moxml::Element" do
       end
 
       it "sets inner HTML" do
-        element.inner_html = "<child>text</child>"
+        element.inner_xml = "<child>text</child>"
         expect(element.children.size).to eq(1)
         expect(element.children.first.name).to eq("child")
         expect(element.children.first.text).to eq("text")
