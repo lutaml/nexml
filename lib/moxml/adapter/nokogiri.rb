@@ -224,6 +224,11 @@ module Moxml
           node.content
         end
 
+        def inner_text(node)
+          text_children = node.children - node.element_children
+          text_children.map(&:content).join
+        end
+
         def set_text_content(node, content)
           node.native_content = content
         end

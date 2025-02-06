@@ -237,6 +237,15 @@ module Moxml
           node.text
         end
 
+        def inner_text(node)
+          if node.respond_to?(:inner_text)
+            node.inner_text
+          else
+            # Oga::XML::Text node for example
+            node.text
+          end
+        end
+
         def set_text_content(node, content)
           if node.respond_to?(:inner_text)
             node.inner_text = content
