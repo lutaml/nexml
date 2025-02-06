@@ -171,6 +171,7 @@ element.name               # Get element name
 element.name = "new_name"  # Set element name
 element.text              # Get text content
 element.text = "content"   # Set text content
+element.inner_text        # Get text content for current node only
 element.inner_html        # Get inner XML content
 element.inner_html = xml   # Set inner XML content
 
