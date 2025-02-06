@@ -106,5 +106,25 @@ RSpec.shared_examples "Moxml::Element" do
         expect(element.to_xml).to include("text<child></child>more")
       end
     end
+
+    describe "complex element structures" do
+      it "creates nested paragraphs without namespaces" do
+        outer_p = doc.create_element("p")
+        inner_p = doc.create_element("p")
+        inner_p.add_child("Some text inside paragraph")
+        outer_p.add_child(inner_p)
+
+        expect(outer_p.to_xml).to include("<p>Some text inside paragraph</p>")
+      end
+
+      it "does not return text of child elements in root text" do
+        outer_p = doc.create_element("p")
+        inner_p = doc.create_element("p")
+        inner_p.add_child("Some text inside paragraph")
+        outer_p.add_child(inner_p)
+        expect(outer_p.inner_text).to eq("")
+        expect(inner_p.text).to include("Some text inside paragraph")
+      end
+    end
   end
 end

@@ -79,6 +79,10 @@ module Moxml
       adapter.set_text_content(@native, normalize_xml_value(content))
     end
 
+    def inner_text
+      adapter.inner_text(@native)
+    end
+
     def inner_html
       adapter.inner_html(@native)
     end
