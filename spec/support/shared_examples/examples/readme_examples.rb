@@ -15,7 +15,7 @@ RSpec.shared_examples "README Examples" do
 
       # Add content
       title = doc.create_element("dc:title")
-      title.text = 'XML Processing with Ruby'
+      title.text = "XML Processing with Ruby"
       root.add_child(title)
 
       expect(doc.to_xml).to include(
@@ -28,24 +28,24 @@ RSpec.shared_examples "README Examples" do
   end
 
   describe "Using the builder pattern" do
-    it 'builds a correct document' do
+    it "builds a correct document" do
       doc = Moxml::Builder.new(Moxml.new).build do
         declaration version: "1.0", encoding: "UTF-8"
 
-        element 'library', xmlns: 'http://example.org/library' do
-          element 'book' do
-            element 'title' do
-              text 'Ruby Programming'
+        element "library", xmlns: "http://example.org/library" do
+          element "book" do
+            element "title" do
+              text "Ruby Programming"
             end
 
-            element 'author' do
-              text 'Jane Smith'
+            element "author" do
+              text "Jane Smith"
             end
 
-            comment 'Publication details'
-            element 'published', year: '2024'
+            comment "Publication details"
+            element "published", year: "2024"
 
-            cdata '<custom>metadata</custom>'
+            cdata "<custom>metadata</custom>"
           end
         end
       end
@@ -53,10 +53,10 @@ RSpec.shared_examples "README Examples" do
       expect(doc.to_xml).to include(
         '<?xml version="1.0" encoding="UTF-8"?>',
         '<library xmlns="http://example.org/library">',
-        '<title>Ruby Programming</title>',
-        '<!--Publication details-->',
+        "<title>Ruby Programming</title>",
+        "<!--Publication details-->",
         '<published year="2024"></published>',
-        '<![CDATA[<custom>metadata</custom>]]>',
+        "<![CDATA[<custom>metadata</custom>]]>",
         "</book>"
       )
     end
@@ -78,10 +78,10 @@ RSpec.shared_examples "README Examples" do
       # Add books
       %w[Ruby XML].each do |title|
         book = doc.create_element("book")
-        book['id'] = "b1-#{title}"
+        book["id"] = "b1-#{title}"
 
         # Add mixed content
-        book.add_child(doc.create_comment('Book details'))
+        book.add_child(doc.create_comment("Book details"))
         dc_title = doc.create_element("dc:title")
         dc_title.text = title
         book.add_child(dc_title)
@@ -116,13 +116,13 @@ RSpec.shared_examples "README Examples" do
       end.to raise_error(Moxml::ParseError)
 
       expect do
-        doc = context.parse('<root/>')
+        doc = context.parse("<root/>")
         root = doc.root
         root.add_namespace("n", "wrong.url")
       end.to raise_error(Moxml::NamespaceError)
 
       expect do
-        doc = context.parse('<root/>')
+        doc = context.parse("<root/>")
         element = doc.create_element("wrong,name")
         doc.add_child(element)
       end.to raise_error(Moxml::ValidationError)
